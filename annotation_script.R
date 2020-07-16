@@ -1,14 +1,16 @@
-source('test.R')
 source('functions_for_annotation.R')
-load('data_prepared_for_annotation')
 
+library(loggit)
+default::default(message) <- list(echo = F)
 
 ### !!! need to add step which checks wheter all papers have unique platforms
 ### !!! acutally, we need to use experiment id, instead of paper id, which has the same platform... species is implied then. perhaps lets call it dataset?
-
+### !!! I need to fork and secure devtools::install_github('PavlidisLab/gemmaAPI.R')
 
 
 ### Prepare working list ###
+# load('data_prepared_for_annotation')
+
 data_annotation <- list(
   'descriptions' = data_prepared_for_annotation$descriptions,
   'input' = NA,
@@ -23,47 +25,87 @@ data_annotation$input <- list(
   'platform_ids_for_probe_annotation' = data_prepared_for_annotation$platform_ids_for_probe_annotation,
   'data_NOT_for_probe_annotation' = data_prepared_for_annotation$data_NOT_for_probe_annotation
 )
+
+data_annotation$input$qa$data_for_probe_annotation <- verify_df(df_ = data_annotation$input$data_for_probe_annotation, only_qa = T)
+data_annotation$input$qa$platform_ids_for_probe_annotation <- verify_df(df_ = data_annotation$input$platform_ids_for_probe_annotation, only_qa = T)
+data_annotation$input$qa$data_NOT_for_probe_annotation <- verify_df(df_ = data_annotation$input$data_NOT_for_probe_annotation, only_qa = T)
+
 ### Prepare working list ###
 
+opts_da <- list('des_paper_id_col' = 'Pub.',
+                'des_species_col' = 'Species',
+                'input_paper_col' = 'Pub.',
+                'des_platform_col' = 'Assay',
+                'annotation_folder' = 'annotation_qc',
+                'splitting_message_ok' = 'Splitting of %s into %s ad %s was ok.',
+                'splitting_message_bad' = 'Annotated data do not have the same number of rows as finalized and leftover data. Splitting failed!'
+                )
 
+dir.create(opts_da$annotation_folder)
+
+set_logfile(paste0(opts_da$annotation_folder, "/loggit.log"))
+
+message('Saving analysis options...')
+save(opts_da, file = 'opts_da_used_for_analysis')
+message('... options saved.')
 
 #######################
 ### Annotate probes ###
 #######################
+message('*** STARTING PROBE-CENTERED ANNOTATION... ***')
 
-# test <- subset(x = data_prepared_for_annotation$data_for_probe_annotation, subset = data_prepared_for_annotation$data_for_probe_annotation$Pub. %in% c(34)) 
-
-
-
-Sys.time()
+message('Starting annotation...')
 data_annotation$probes_direct$annotations <- master_annotator(
   descriptions_df = data_annotation$descriptions,
-  des_paper_id_col = 'Pub.',
-  des_species_col = 'Species',
+  des_paper_id_col = opts_da$des_paper_id_col,
+  des_species_col = opts_da$des_species_col,
   input_df = data_annotation$input$data_for_probe_annotation,
-  input_paper_col = 'Pub.',
+  input_paper_col = opts_da$input_paper_col,
   input_id_col = 'Probe',
-  str_experiment_name = 'probes_direct',
-  str_identifier_type__ = data_annotation$input$platform_ids_for_probe_annotation)
-Sys.time()
+  PERFORM_C_annotation = T,
+  C_legacy_D_str_identifier_type__ = data_annotation$input$platform_ids_for_probe_annotation)
+message('... annotated.')
 
-# length(unique(data_annotation$annotations$probes$Pub.))
-# 
-# length(unique(data_annotation$data_for_probe_annotation$Pub.))
-# 
-# unique(data_annotation$data_for_probe_annotation$Pub.)[order(unique(data_annotation$data_for_probe_annotation$Pub.))]
-# test <- dplyr::select(data_annotation$finalized$probes, colnames(data_annotation$platform_ids_for_probe_annotation), dplyr::everything())
 
-# Prepare finalized and leftover files
+
+message('Subsetting annotation into finalized and leftover data...')
 data_annotation$probes_direct$finalized <- subset(x = data_annotation$probes_direct$annotations, subset = !is.na(data_annotation$probes_direct$annotations$external_gene_name))
-# save(data_annotation$probes_direct$finalized, file = 'finalized_probes')
-# load(file = 'finalized_probes')
 
 data_annotation$probes_direct$leftover <- subset(x = data_annotation$probes_direct$annotations, subset = is.na(data_annotation$probes_direct$annotations$external_gene_name))
-# save(data_annotation$probes_direct$leftover, file = 'leftover_probes')
-# load(file = 'leftover_probes')
 
-check_was_the_spliting_of_df_by_filtering_ok(df_original = data_annotation$probes_direct$annotations, list_df_splited = list(data_annotation$probes_direct$finalized, data_annotation$probes_direct$leftover))
+
+### !!! What about annotated vs input???
+was_splitting_ok <- check_was_the_spliting_of_df_by_filtering_ok(
+  df_original = data_annotation$probes_direct$annotations, 
+  list_df_splited = list(
+    data_annotation$probes_direct$finalized, 
+    data_annotation$probes_direct$leftover))
+
+if (was_splitting_ok) {
+  message(sprintf(
+    opts_da$splitting_message_ok, 
+    deparse(substitute(data_annotation$probes_direct$annotations)),
+            deparse(substitute(data_annotation$probes_direct$finalized)),
+                    deparse(substitute(data_annotation$probes_direct$leftover))))
+} else stop(opts_da$splitting_message_bad)
+
+message('... subsetting done.')
+
+
+
+data_annotation$probes_direct$qa$finalized <- verify_df(df_ = data_annotation$probes_direct$finalized, only_qa = T)
+data_annotation$probes_direct$qa$leftover <- verify_df(df_ = data_annotation$probes_direct$leftover, only_qa = T)
+
+
+
+message('Saving probe-centered analysis as probe_centered_analysis...')
+probes_direct <- data_annotation$probes_direct
+save(probes_direct, file = paste0(opts_da$annotation_folder, '/probe_centered_analysis'))
+message('... saved. Please remember to check quality of data - use "qa" element of saved list.')
+
+rm(probes_direct, was_splitting_ok)
+
+message('*** PROBE-CENTERED ANNOTATION FINISHED! ***')
 #######################
 ### Annotate probes ###
 #######################
@@ -73,22 +115,41 @@ check_was_the_spliting_of_df_by_filtering_ok(df_original = data_annotation$probe
 ##################################
 ### Annotate probes with GEMMA ###
 ##################################
+message('*** STARTING GEMMA PRE-ANNOTATION OF EXPERIMENTS/PLATFORMS NOT FOUND IN ENSEMBL... ***')
+
 data_annotation$gemma$input_from_probes_leftover <- dplyr::select(data_annotation$probes_direct$leftover, -'external_gene_name')
 
-data_annotation$gemma$candidate_publ_for_gemma <- unique(data_annotation$probes_direct$leftover$Pub.)[unique(data_annotation$probes_direct$leftover$Pub.) %nin% unique(data_annotation$probes_direct$finalized$Pub.)]
+### !!! Are platforms with NA returned in getting_highest_hit also here?
+message('Setting publications to check against gemma platform base (these publications that had 0 hits in probe-centered analysis)... ')
+data_annotation$gemma$candidate_publ_for_gemma <- 
+  unique(data_annotation$probes_direct$leftover[[opts_da$input_paper_col]])[unique(data_annotation$probes_direct$leftover[[opts_da$input_paper_col]]) %nin% unique(data_annotation$probes_direct$finalized[[opts_da$input_paper_col]])]
 
-data_annotation$gemma$candidate_publ_for_gemma <- unique(subset(x = data_annotation$descriptions, subset = data_annotation$descriptions$Pub. %in% data_annotation$gemma$candidate_publ_for_gemma, select = c('Pub.', 'Assay')))
+data_annotation$gemma$candidate_publ_for_gemma <- 
+  unique(subset(
+    x = data_annotation$descriptions, 
+    subset = data_annotation$descriptions[[opts_da$des_paper_id_col]] %in% data_annotation$gemma$candidate_publ_for_gemma, 
+    select = c(opts_da$des_paper_id_col, opts_da$des_platform_col))) 
 
-### !!! I need to fork and secure devtools::install_github('PavlidisLab/gemmaAPI.R')
-data_annotation$gemma$gemma_platforms <- download_platforms_from_gemma(unique(data_annotation$gemma$candidate_publ_for_gemma$Assay))
+message(sprintf('Set platforms %s for publications: %s.', paste(data_annotation$gemma$candidate_publ_for_gemma$Assay, collapse = ', '), paste(data_annotation$gemma$candidate_publ_for_gemma$Pub., collapse = ', ')))
+
+
+
+message('Downloading gemma annotation files...')
+data_annotation$gemma$gemma_platforms <- download_platforms_from_gemma(unique(data_annotation$gemma$candidate_publ_for_gemma[[opts_da$des_platform_col]])) ### !!! changed from data_annotation$gemma$candidate_publ_for_gemma$Assay
+message('... downloaded.')
+
+
 
 data_annotation$gemma$pubs_found_in_gemma <- subset(
   x = data_annotation$gemma$candidate_publ_for_gemma, 
-  subset = toupper(data_annotation$gemma$candidate_publ_for_gemma$Assay) %in% names(data_annotation$gemma$gemma_platforms[!is.na(data_annotation$gemma$gemma_platforms)]))
+  subset = toupper(data_annotation$gemma$candidate_publ_for_gemma[[opts_da$des_platform_col]]) %in% names(data_annotation$gemma$gemma_platforms[!is.na(data_annotation$gemma$gemma_platforms)])) ### !!! changed from data_annotation$gemma$candidate_publ_for_gemma$Assay
 
 data_annotation$gemma$pubs_NOT_found_in_gemma <-  subset(
   x = data_annotation$gemma$candidate_publ_for_gemma, 
-  subset = toupper(data_annotation$gemma$candidate_publ_for_gemma$Assay) %in% names(data_annotation$gemma$gemma_platforms[is.na(data_annotation$gemma$gemma_platforms)]))
+  subset = toupper(data_annotation$gemma$candidate_publ_for_gemma[[opts_da$des_platform_col]]) %in% names(data_annotation$gemma$gemma_platforms[is.na(data_annotation$gemma$gemma_platforms)])) ### !!! changed from data_annotation$gemma$candidate_publ_for_gemma$Assay
+
+message(sprintf('Platforms to be pre-annotated in gemma are: %s for publications: %s.', paste(data_annotation$gemma$pubs_found_in_gemma$Assay, collapse = ', '), paste(data_annotation$gemma$pubs_found_in_gemma$Pub., collapse = ', ')))
+
 
 
 data_annotation$gemma$leftover$leftovers_not_run_through_gemma_cause_these_pubs_were_analyzed_in_probes_step <- subset(
@@ -97,18 +158,22 @@ data_annotation$gemma$leftover$leftovers_not_run_through_gemma_cause_these_pubs_
 
 data_annotation$gemma$leftover$leftovers_not_run_through_gemma_cause_platform_was_not_found <- subset(x = data_annotation$gemma$input_from_probes_leftover, subset = data_annotation$gemma$input_from_probes_leftover$Pub. %in% data_annotation$gemma$pubs_NOT_found_in_gemma$Pub.)
 
+
+message('Pre-annotating data with various identfiers found in gemma platform description files (to be annotated in next, identifer-centered step)... ')
 data_annotation$gemma$annotation_raw <- get_gemma_annotations_for_data(
   descriptions_df = data_annotation$descriptions, 
-  des_platform_col = 'Assay', 
-  des_paper_id_col = 'Pub.', 
+  des_platform_col = opts_da$des_platform_col, 
+  des_paper_id_col = opts_da$des_paper_id_col, 
   named_list_gemma_platforms = data_annotation$gemma$gemma_platforms, 
   gemma_probe_col = 'ProbeName', 
   input_df = data_annotation$gemma$input_from_probes_leftover, 
-  input_paper_id_col = 'Pub.', 
+  input_paper_id_col = opts_da$input_paper_col, 
   input_probe_col = 'Probe')
 
 
 data_annotation$gemma$annotation$GPL8160 <- GPL8160_post_gemma_wrapper(annotation_raw = data_annotation$gemma$annotation_raw$GPL8160, divider_of_values_in_serie_str_ = ', ', old_divider_to_be_replaced = '\\|', uniqualize_ = T, Gene_ID_col = 'Gene_ID', gene_description_col = 'Description', gene_symbol_col = 'Symbol', cols_to_nullify = c('GeneSymbols', 'NCBIids', 'GeneNames', 'GOTerms', 'GemmaIDs'))
+message('... following platforms were annotated: %s.', paste(names(data_annotation$gemma$annotation), collapse = ', '))
+
 
 ### !!! Now we need to subset finalized and leftovers, and we can move on
 data_annotation$gemma$finalized_full_gemma_input_pre_annotated <- rbind(
@@ -116,20 +181,47 @@ data_annotation$gemma$finalized_full_gemma_input_pre_annotated <- rbind(
   data_annotation$gemma$leftover$leftovers_not_run_through_gemma_cause_platform_was_not_found, 
   data_annotation$gemma$annotation$GPL8160)
 
-length(data_annotation$gemma$finalized_full_gemma_input_pre_annotated[[1]]) == length(data_annotation$gemma$input_from_probes_leftover[[1]])
+i_and_o_has_the_same_nb_of_rows <- length(data_annotation$gemma$finalized_full_gemma_input_pre_annotated[[1]]) == length(data_annotation$gemma$input_from_probes_leftover[[1]])
+if (i_and_o_has_the_same_nb_of_rows) {
+  message(sprintf(
+    'Ok. Input (%s) and output (%s) of this step have the same length.', 
+    deparse(substitute(data_annotation$gemma$input_from_probes_leftover[[1]])), 
+    deparse(substitute(data_annotation$gemma$finalized_full_gemma_input_pre_annotated[[1]]))))
+} else stop('Error! Input and output of this step have different lengths.')
+
+
+
+data_annotation$gemma$qa$finalized_full_gemma_input_pre_annotated <- verify_df(df_ = data_annotation$gemma$finalized_full_gemma_input_pre_annotated, only_qa = T)
+
+
+
+message('Saving gemma-centered pre-analysis as gemma_centered_pre_analysis...')
+gemma <- data_annotation$gemma
+save(gemma, file = paste0(opts_da$annotation_folder, '/gemma_centered_pre_analysis'))
+message('... saved. Please remember to check quality of data - use "qa" element of saved list.')
+
+rm(i_and_o_has_the_same_nb_of_rows, gemma)
+
+message('*** ... GEMMA PRE-ANNOTATION FINISHED ***')
 ##################################
 ### Annotate probes with GEMMA ###
 ##################################
 
 
 
-### Unanotated probes from annotate probes need to be merged with non-probes ###
-colnames(data_annotation$gemma$finalized_full_gemma_input_pre_annotated) == colnames(data_annotation$input$data_NOT_for_probe_annotation)
+message('*** MERGING DATA FOR NON-PROBE INDENTIFER-CENTERED ANNOTATION... ***')
+message('Merging data originally without probe identifers and unannotated entries from probe-centered analysis (both passed through gemma pre-annotation and not)... ')
 
-length(colnames(data_annotation$gemma$finalized_full_gemma_input_pre_annotated)) == length(colnames(data_annotation$input$data_NOT_for_probe_annotation))
+if (colnames(data_annotation$gemma$finalized_full_gemma_input_pre_annotated) == colnames(data_annotation$input$data_NOT_for_probe_annotation)) {
+  message('Datasets have the same column names')
+} else stop('Error! Datasets have different column names')
+if (length(colnames(data_annotation$gemma$finalized_full_gemma_input_pre_annotated)) == length(colnames(data_annotation$input$data_NOT_for_probe_annotation))) {
+  message('Datasets have the same number of columns')
+} else stop('Error! Datasets have different number of columns')
 
 data_annotation$identifers$input <- rbind(data_annotation$gemma$finalized_full_gemma_input_pre_annotated, data_annotation$input$data_NOT_for_probe_annotation)
-### Unanotated probes from annotate probes need to be merged with non-probes ###
+
+message('*** ... MERGED! ***')
 
 
 
@@ -137,49 +229,80 @@ data_annotation$identifers$input <- rbind(data_annotation$gemma$finalized_full_g
 #####################################
 ### Pseudo-memoization non-probes ###
 #####################################
+message('*** STARTING NON-PROBE INDENTIFER-CENTERED ANNOTATION... ***')
+
+message('Creating database for annotation...')
 data_annotation$identifers$pseudo_memoized_annotation_db <- master_annotator(
   descriptions_df = data_annotation$descriptions,
-  des_paper_id_col = 'Pub.',
-  des_species_col = 'Species',
+  des_paper_id_col = opts_da$des_paper_id_col,
+  des_species_col = opts_da$des_species_col,
   input_df = data_annotation$identifers$input,
-  input_paper_col = 'Pub.',
+  input_paper_col = opts_da$input_paper_col,
   input_id_col = 'Probe',
-  str_experiment_name = 'pseudo_memoization',
-  str_identifier_type__ = 'pseudo_memoization',
-  ENSG_col = 'ENSG_', ENST_col = 'ENST_', Gene_ID_col = 'Gene_ID', NM_col = 'NM_', Accession_col = 'Accession', Unigene_col = 'Unigene', NR_col = 'NR_', XM_col = 'XM_', XR_col = 'XR_',
-  should_i_prepare_dbs_for_pseudomemoization = T,
-  return_qa_of_pseudomemoization = F)
+  A_C_all_ENSG_col = 'ENSG_', A_C_all_ENST_col = 'ENST_', A_C_all_Gene_ID_col = 'Gene_ID', A_C_all_NM_col = 'NM_', A_C_all_Accession_col = 'Accession', A_C_all_Unigene_col = 'Unigene', A_C_all_NR_col = 'NR_', A_C_all_XM_col = 'XM_', A_C_all_XR_col = 'XR_',
+  PERFORM_A_prepare_dbs_for_pseudomemoization = T,
+  A_return_qa_of_pseudomemoization = F)
+message('... created.')
 
 
 
+message('Starting annotation...')
 data_annotation$identifers$annotations$list <- master_annotator(
   descriptions_df = data_annotation$descriptions,
-  des_paper_id_col = 'Pub.',
-  des_species_col = 'Species',
+  des_paper_id_col = opts_da$des_paper_id_col,
+  des_species_col = opts_da$des_species_col,
   input_df = data_annotation$identifers$input,
-  input_paper_col = 'Pub.',
+  input_paper_col = opts_da$input_paper_col,
   input_id_col = 'Probe',
-  str_experiment_name = 'annotations',
-  str_identifier_type__ = 'all',
-  ENSG_col = 'ENSG_', ENST_col = 'ENST_', Gene_ID_col = 'Gene_ID', NM_col = 'NM_', Accession_col = 'Accession', Unigene_col = 'Unigene', NR_col = 'NR_', XM_col = 'XM_', XR_col = 'XR_', 
-  pseudo_memoized_db = data_annotation$identifers$pseudo_memoized_annotation_db)
-
+  PERFORM_C_annotation = T,
+  A_C_all_ENSG_col = 'ENSG_', A_C_all_ENST_col = 'ENST_', A_C_all_Gene_ID_col = 'Gene_ID', A_C_all_NM_col = 'NM_', A_C_all_Accession_col = 'Accession', A_C_all_Unigene_col = 'Unigene', A_C_all_NR_col = 'NR_', A_C_all_XM_col = 'XM_', A_C_all_XR_col = 'XR_', 
+  C_pseudo_memoized_db = data_annotation$identifers$pseudo_memoized_annotation_db)
+message('... annotated.')
 
 
 
 data_annotation$identifers$annotations$df <- rlist::list.rbind(data_annotation$identifers$annotations$list)
 
-# Prepare finalized and leftover files
+
+
+message('Subsetting annotation into finalized and leftover data...')
+
 data_annotation$identifers$finalized <- subset(x = data_annotation$identifers$annotations$df, subset = !is.na(data_annotation$identifers$annotations$df$external_gene_name))
-# save(data_annotation$identifers$finalized, file = 'finalized_non_probes')
-# load(file = 'finalized_non_probes')
 
 data_annotation$identifers$leftover <- subset(x = data_annotation$identifers$annotations$df, subset = is.na(data_annotation$identifers$annotations$df$external_gene_name))
-# save(data_annotation$identifers$leftover, file = 'leftover_non_probes')
-# load(file = 'leftover_non_probes')
 
-check_was_the_spliting_of_df_by_filtering_ok(df_original = data_annotation$identifers$annotations$df, list_df_splited = list(data_annotation$identifers$finalized, data_annotation$identifers$leftover))
 
+
+### !!! What about annotated vs input???
+was_splitting_ok <- check_was_the_spliting_of_df_by_filtering_ok(
+  df_original = data_annotation$identifers$annotations$df, 
+  list_df_splited = list(data_annotation$identifers$finalized, data_annotation$identifers$leftover))
+
+if (was_splitting_ok) {
+  message(sprintf(
+    opts_da$splitting_message_ok, 
+    deparse(substitute(data_annotation$identifers$annotations)),
+    deparse(substitute(data_annotation$identifers$finalized)),
+    deparse(substitute(data_annotation$identifers$leftover))))
+} else stop(opts_da$splitting_message_bad)
+
+message('... subsetting done.')
+
+
+
+data_annotation$identifers$qa$finalized <- verify_df(df_ = data_annotation$identifers$finalized, only_qa = T)
+data_annotation$identifers$qa$leftover <- verify_df(df_ = data_annotation$identifers$leftover, only_qa = T)
+
+
+
+message('Saving non-probe identifier-centered analysis as identifier_centered_analysis...')
+identifers <- data_annotation$identifers
+save(probes_direct, file = paste0(opts_da$annotation_folder, '/identifier_centered_analysis'))
+message('... saved. Please remember to check quality of data - use "qa" element of saved list.')
+
+rm(identifers, was_splitting_ok)
+
+message('*** ... NON-PROBE INDENTIFER-CENTERED ANNOTATION FINISHED ***')
 #####################################
 ### Pseudo-memoization non-probes ###
 #####################################
@@ -190,42 +313,45 @@ check_was_the_spliting_of_df_by_filtering_ok(df_original = data_annotation$ident
 #####################################
 ### Annotate gene names with ncbi ###
 #####################################
+message('*** STARTING GENE SYMBOL-CENTERED ANNOTATION... ***')
+
 data_annotation$symbols$input_from_non_probes_leftovers <- data_annotation$identifers$leftover
 
 
 
-
-# test_ <- data_annotation$identifers$input[1:20,]
-
-# Get Gene_IDs for each gene Symbol
+message('Translating all gene names in the data to gene ids using ncbi... ')
 data_annotation$symbols$ncbi_annotation_of_symbols_to_gene_ids <- master_annotator(
   descriptions_df = data_annotation$descriptions,
-  des_paper_id_col = 'Pub.',
-  des_species_col = 'Species',
+  des_paper_id_col = opts_da$des_paper_id_col,
+  des_species_col = opts_da$des_species_col,
   input_df = data_annotation$symbols$input_from_non_probes_leftovers,
-  input_paper_col = 'Pub.',
+  input_paper_col = opts_da$input_paper_col,
   input_id_col = 'Symbol',
-  str_experiment_name = 'annotations',
-  str_identifier_type__ = 'Gene name',
-  perform_ncbi_annotation = T, 
-  string_separator__ = ', ')
+  C_legacy_D_str_identifier_type__ = 'Gene name',
+  PERFORM_D_ncbi_annotation = T, 
+  A_D_string_separator__ = ', ')
 ### !!! add saving midpoints, super important
+message('... translated.')
 
 
 
-### Concominant steps ###
-data_annotation$symbols$input_plus_new_gene_id_from_ncbi_column <- add_new_gene_id_col_originating_from_ncbi_annotation(
-  descriptions_df = data_annotation$descriptions, 
-  desc_paper_id_col = 'Pub.', 
-  desc_organism_col = 'Species',
-  input_df = data_annotation$symbols$input_from_non_probes_leftovers, 
-  input_paper_id_col = 'Pub.',
-  input_input_id_col = 'Symbol', 
-  input_organism_col = 'Species', 
-  perform_ncbi_annotation_output = data_annotation$symbols$ncbi_annotation_of_symbols_to_gene_ids)
+
+message('Adding ncbi-derived gene ids to original data... ')
+data_annotation$symbols$input_plus_new_gene_id_from_ncbi_column <- master_annotator(
+  descriptions_df = data_annotation$descriptions,
+  des_paper_id_col = opts_da$des_paper_id_col,
+  des_species_col = opts_da$des_species_col,
+  input_df = data_annotation$symbols$input_from_non_probes_leftovers,
+  input_paper_col = opts_da$input_paper_col,
+  input_id_col = 'Symbol',
+  PERFORM_E_add_new_gene_id_col_originating_from_ncbi = T, 
+  E_PERFORM_D_output = data_annotation$symbols$ncbi_annotation_of_symbols_to_gene_ids)
+message('.. added.')
 
 
-# Get pseudomemoized list containing external_gene_name_for each Gene_ID
+
+
+message('Creating database for annotation...')
 data_annotation$symbols$pseudomemoize_external_gene_names_to_gene_id <- master_annotator(
   descriptions_df = data_annotation$symbols$ncbi_annotation_of_symbols_to_gene_ids,
   des_paper_id_col = 'dummy_paper',
@@ -233,87 +359,69 @@ data_annotation$symbols$pseudomemoize_external_gene_names_to_gene_id <- master_a
   input_df = data_annotation$symbols$ncbi_annotation_of_symbols_to_gene_ids,
   input_paper_col = 'dummy_paper',
   input_id_col = 'Gene_ID',
-  str_experiment_name = 'pseudo_memoization',
-  str_identifier_type__ = 'pseudo_memoization',
   Gene_ID_col = 'Gene_ID',
-  should_i_prepare_dbs_for_pseudomemoization = T,
+  PERFORM_A_prepare_dbs_for_pseudomemoization = T,
   return_qa_of_pseudomemoization = F)
-### Concominant steps ###
+message('... created.')
 
 
-### !!! Symbols analysis overrides unidentified_idetifiers columns! It happenes on following step:
 
-# Get pseudoannotate external_gene_name to Gene_IDs in actual data
+message('Starting annotation...')
 data_annotation$symbols$annotations$list <- master_annotator(
   descriptions_df = data_annotation$descriptions,
-  des_paper_id_col = 'Pub.',
-  des_species_col = 'Species',
+  des_paper_id_col = opts_da$des_paper_id_col,
+  des_species_col = opts_da$des_species_col,
   input_df = data_annotation$symbols$input_plus_new_gene_id_from_ncbi_column,
-  input_paper_col = 'Pub.',
+  input_paper_col = opts_da$input_paper_col,
   input_id_col = 'Probe',
-  str_experiment_name = 'annotations',
-  str_identifier_type__ = 'Gene_ID',
+  PERFORM_C_annotation = T,
+  C_legacy_D_str_identifier_type__ = 'Gene_ID',
   Gene_ID_col = 'Gene_ID_from_ncbi',
-  pseudo_memoized_db = data_annotation$symbols$pseudomemoize_external_gene_names_to_gene_id)
+  C_pseudo_memoized_db = data_annotation$symbols$pseudomemoize_external_gene_names_to_gene_id)
+message('... annotated.')
 
 
 data_annotation$symbols$annotations$df <- rlist::list.rbind(data_annotation$symbols$annotations$list)
 
-# Prepare finalized and leftover files
+
+
+
+message('Subsetting annotation into finalized and leftover data...')
 data_annotation$symbols$finalized <- subset(x = data_annotation$symbols$annotations$df, subset = !is.na(data_annotation$symbols$annotations$df$external_gene_name))
-# save(data_annotation$symbols$finalized, file = 'finalized_non_probes')
-# load(file = 'finalized_non_probes')
 
 data_annotation$symbols$leftover <- subset(x = data_annotation$symbols$annotations$df, subset = is.na(data_annotation$symbols$annotations$df$external_gene_name))
-# save(data_annotation$symbols$leftover, file = 'leftover_non_probes')
-# load(file = 'leftover_non_probes')
 
-check_was_the_spliting_of_df_by_filtering_ok(df_original = data_annotation$symbols$annotations$df, list_df_splited = list(data_annotation$symbols$finalized, data_annotation$symbols$leftover))
+### !!! What about annotated vs input???
+was_splitting_ok <- check_was_the_spliting_of_df_by_filtering_ok(
+  df_original = data_annotation$symbols$annotations, 
+  list_df_splited = list(
+    data_annotation$symbols$finalized, 
+    data_annotation$symbols$leftover))
+
+if (was_splitting_ok) {
+  message(sprintf(
+    opts_da$splitting_message_ok, 
+    deparse(substitute(data_annotation$symbols$annotations)),
+    deparse(substitute(data_annotation$symbols$finalized)),
+    deparse(substitute(data_annotation$symbols$leftover))))
+} else stop(opts_da$splitting_message_bad)
+
+message('... subsetting done.')
+
+
+data_annotation$symbols$qa$finalized <- verify_df(df_ = data_annotation$symbols$finalized, only_qa = T)
+data_annotation$symbols$qa$leftover <- verify_df(df_ = data_annotation$symbols$leftover, only_qa = T)
 
 
 
+message('Saving ncbi-centered analysis as ncbi_centered_analysis...')
+symbols <- data_annotation$symbols
+save(symbols, file = paste0(opts_da$annotation_folder, '/ncbi_centered_analysis'))
+message('... saved. Please remember to check quality of data - use "qa" element of saved list.')
 
+rm(symbols, was_splitting_ok)
 
-
-
-
-
-
-
-
-# test_x <- data_annotation$identifers$pseudo_memoized_annotation_db
-# 
-# 
-# 
-# class(test$dummy_paper)
-# 
-# test_3 <- as.data.frame(t(test))
-# 
-# test2 <- purrr::map(.x = test, .f = function(x) {x$ids})
-# 
-# 
-# data_annotation$descriptions$Species
-# 
-# data_annotation$symbols$input_from_non_probes_leftovers$Symbol
-# 
-# 
-# test <- change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName(char_vec = data_annotation$symbols$input_from_non_probes_leftovers$Symbol, regex_pattern_to_split_with = ', ')
-# 
-# 
-# 
-# test <- split_string_by_pattern_and_extract_vec_of_unique_values(chr_vec = data_annotation$symbols$input_from_non_probes_leftovers$Symbol, pattern_to_split_individual_strings_with = ', ')
-# 
-# 
-# 
-# testx <- merge(x = data_annotation$symbols$input_from_non_probes_leftovers, y = data_annotation$descriptions, by = 'Pub.', all.x = T)
-# 
-# 
-# test2 <- get_vector_of_single_unique_gene_ids_and_species(
-#   input_df = testx,
-#   identifer_col = 'Symbol', 
-#   species_col = 'Species', 
-#   string_separator = ', ')
-
+message('*** ... GENE SYMBOL-CENTERED ANNOTATION FINISHED! ***')
 ###########################
 ### Annotate non-probes ###
 ###########################
@@ -326,86 +434,51 @@ check_was_the_spliting_of_df_by_filtering_ok(df_original = data_annotation$symbo
 
 
 
+message('*** MERGING ALL FINALIZED DATA... ***')
+
+message('Normalizing columns...')
+data_annotation$probes_direct$finalized$identifed_identifer <- data_annotation$probes_direct$finalized$Probe
+data_annotation$probes_direct$finalized$unidentifed_identifers <- NA
+data_annotation$probes_direct$finalized$Gene_ID_from_ncbi <- NA
+
+data_annotation$identifers$finalized$Gene_ID_from_ncbi <- NA
+
+if (colnames(data_annotation$probes_direct$finalized) == colnames(data_annotation$identifers$finalized) & colnames(data_annotation$identifers$finalized) == colnames(data_annotation$symbols$finalized)) {
+  message('Datasets have the same column names')
+} else stop('Error! Datasets have different column names')
+if (length(colnames(data_annotation$probes_direct$finalized)) == length(colnames(data_annotation$identifers$finalized)) & length(colnames(data_annotation$identifers$finalized)) == length(colnames(data_annotation$symbols$finalized))) {
+  message('Datasets have the same number of columns')
+} else stop('Error! Datasets have different number of columns')
+message('... columns normalized.')
+
+data_annotation$full_finalized$data <- rbind(data_annotation$probes_direct$finalized, data_annotation$identifers$finalized, data_annotation$symbols$finalized)
+
+data_annotation$true_leftovers$data <- data_annotation$symbols$leftover
+
+if ((length(data_annotation$input$data_for_probe_annotation[[1]]) + length(data_annotation$input$data_NOT_for_probe_annotation[[1]])) == (length(data_annotation$full_finalized$data[[1]]) + length(data_annotation$true_leftovers$data[[1]]))) {
+  message('Annotation input and out datasets have equal number of entries.')
+} else stop('Error! Annotation input and out datasets have different number of entries!')
+
+data_annotation$full_finalized$qa <- verify_df(df_ = data_annotation$full_finalized$data, only_qa = T)
+data_annotation$true_leftovers$qa <- verify_df(df_ = data_annotation$true_leftovers$data, only_qa = T)
+
+message('Saving final finalized data as full_finalized_data...')
+full_finalized <- data_annotation$full_finalized
+save(full_finalized, file = paste0(opts_da$annotation_folder, '/full_finalized_data'))
+message('... saved. Please remember to check quality of data - use "qa" element of saved list.')
+
+message('Saving final leftover data as true_leftovers_data...')
+true_leftovers <- data_annotation$true_leftovers
+save(true_leftovers, file = paste0(opts_da$annotation_folder, '/true_leftovers_data'))
+message('... saved. Please remember to check quality of data - use "qa" element of saved list.')
 
 
+message('*** ... FINALIZED DATA MERGED! ***')
 
+get_all_symbols_in_chrvec()
 
-
-
-
-# Merge leftover_Probe_ID z data_prepared_for_annotation$data_NOT_for_probe_annotation:
-# 1) kolejność kolumn sié chyba zmienia?
-# Make a list, with elements
-#ENSG_
-#ENST_
-#Gene_ID
-#NM_
-#Accession
-#Unigene	XM_	XR_	NR_	Nucleotide
-#Symbol
-# test <- return_all_usable_id_types(ENSG_ = 'ENSG_', ENST_ = 'ENST_', Gene_ID = 'Gene_ID', NM_ = 'NM_', Accession = 'Accession', Unigene = 'Unigene', NR_ = 'NR_', XM_ = 'XM_', XR_ = 'XR_')
-# 
-# for (n in test){
-#   print(n$filter_name)
-# }
-# 
-# test[[1]]
-# test_mem <- data_prepared_for_annotation$data_NOT_for_probe_annotation$NM_
-# 
-# test_mem2 <- purrr::map(.x = test_mem, .f = function(x){
-#   stringr::str_split(string = x, pattern = ', ', simplify = T)
-# })
-# 
-# test_mem3 <- unique(as.character(rlist::list.cbind(test_mem2)))
-# class(test_mem3)
-# 
-# test_mart <- biomaRt::useMart("ENSEMBL_MART_ENSEMBL", dataset = "mmusculus_gene_ensembl")
-# 
-# test_mem4 <- biomaRt::getBM(
-#   attributes = c('refseq_mrna', "external_gene_name"),
-#   filters = 'refseq_mrna',
-#   values = test_mem3,
-#   uniqueRows = F,
-#   mart = test_mart
-# )
-# 
-# 
-# data_prepared_for_annotation$annotations$data_list_non_probes <- split(data_prepared_for_annotation$data_NOT_for_probe_annotation, f = data_prepared_for_annotation$data_NOT_for_probe_annotation[['Pub.']])
-# 
-# data_prepared_for_annotation$annotations$output_data_list_non_probes <- list()
-# 
-# for(pub_n in seq_along(data_prepared_for_annotation$annotations$data_list_non_probes))
-# {
-#   Sys.time()
-#   data_prepared_for_annotation$annotations$output_data_list_non_probes[[pub_n]] <- master_annotator(
-#     descriptions_df = data_prepared_for_annotation$descriptions, 
-#     des_paper_id_col = 'Pub.', 
-#     des_species_col = 'Species', 
-#     input_df = data_prepared_for_annotation$data_list_non_probes[[pub_n]], 
-#     input_paper_col = 'Pub.', 
-#     input_id_col = 'Probe', 
-#     str_experiment_name = 'non-probes', 
-#     str_identifier_type__ = 'all',
-#     ENSG_ = 'ENSG_', ENST_ = 'ENST_', Gene_ID = 'Gene_ID', NM_ = 'NM_', Accession = 'Accession', Unigene = 'Unigene', NR_ = 'NR_', XM_ = 'XM_', XR_ = 'XR_')
-#   Sys.time()
-# }
-
-
-
-# test <- set_mart_to_be_used(species_ = 'mice', int_loop = n, mouse_name = normalized_species_names$mouse, rat_name = normalized_species_names$rat, human_name = normalized_species_names$human, sheep_name = normalized_species_names$sheep, saimiri_name = normalized_species_names$saimiri)
-
-# Sys.time()
-# test_2_annotations_Probe_ID <- master_annotator(
-#   descriptions_df = data_annotation$descriptions,
-#   des_paper_id_col = 'Pub.',
-#   des_species_col = 'Species',
-#   input_df = test,
-#   input_paper_col = 'Pub.',
-#   input_id_col = 'Probe',
-#   str_experiment_name = 'test_2',
-#   str_identifier_type__ = 'all',
-#   ENSG_ = 'ENSG_', ENST_ = 'ENST_', Gene_ID = 'Gene_ID', NM_ = 'NM_', Accession = 'Accession', Unigene = 'Unigene', NR_ = 'NR_', XM_ = 'XM_', XR_ = 'XR_')
-# Sys.time()
-# # refseq_mrna
-# ### !!! i think we need to remove properly those ids whish are na
-# # save(annotations_Probe_ID, file = 'annotations_Probe_ID')
+args(master_annotator)
+deparse(sys.call())
+Sys.getenv()
+message()
+paste(ls(), collapse = ', ')
