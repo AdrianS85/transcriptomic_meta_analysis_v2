@@ -1,13 +1,6 @@
 # rm(list = ls(pattern = 'temp.*|test.*'))
 source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
-
-
-set_col_check <- function()
-{
-  col_check_ <- list('Pub.' = 'Pub.',	'Exp.' = 'Exp.',	'ID' = 'ID',	'adj,P,Val' = 'adj,P,Val',	'P,Value' = 'P,Value',	't' = 't',	'B' = 'B',	'logFC' = 'logFC', 'Probe' = 'Probe',	'Symbol' = 'Symbol',	'Description' = 'Description',	'NM_' = 'NM_',	'Accession' = 'Accession',	'Gene_ID' = 'Gene_ID',	'ENST_' = 'ENST_',	'ENSG_' = 'ENSG_', 'Unigene' = 'Unigene',	'XM_' = 'XM_',	'XR_' = 'XR_',	'NR_' = 'NR_',	'NP_' = 'NP_',	'XP_' = 'XP_',	'Nucleotide' = 'Nucleotide',	'Protein' = 'Protein',	'Unknown' = 'Unknown')
-  
-  return(col_check_)
-}
+source('opts.R')
 
 
 
@@ -20,15 +13,20 @@ load_GPL <- function(file_name, decimal, coltypes = NULL)
 
 
 
-read_files_and_add_pubExp <- function (an_opts_pre_, gen_opts_pre_)
+read_files_and_add_pubExp <- function (opts_pre_prep_, directory, input_col_types, decimal, check_cols)
 {
-  file_list_ <- purrr::pmap(.l = list(an_opts_pre_$file_names, an_opts_pre_$pub_names, an_opts_pre_$exp_names),
-                            .f = function(x, y, z) { 
-                              temp <- readr::read_tsv(file = paste0(gen_opts_pre_$dir, '/', x), col_types = gen_opts_pre_$input_col_types, locale = readr::locale(decimal_mark = gen_opts_pre_$decimal))
-                              temp[[gen_opts_pre_$check_cols$Pub.]] <- y 
-                              temp[[gen_opts_pre_$check_cols$Exp.]] <- z
-                              return(temp)})
-  
+  file_list_ <- purrr::pmap(
+    .l = list(opts_pre_prep_[['file_names']], opts_pre_prep_[['exp_names']], opts_pre_prep_[['comp_names']]),
+    .f = function(x, y, z) {
+      temp <- readr::read_tsv(
+        file = paste0(directory, '/', x),
+        col_types = input_col_types,
+        locale = readr::locale(decimal_mark = decimal))
+      
+      temp[[check_cols[['Exp.']]]] <- y 
+      temp[[check_cols[['Comp.']]]] <- z
+      return(temp)})
+                              
   return(file_list_)
 }
 
@@ -239,16 +237,23 @@ set_df_for_append <- function(check_cols_, length)
 
 
 
-copy_out_of_box_ready_columns_into_final_output_wrapper <- function(check_cols_, final_output_, input_)
+copy_out_of_box_ready_columns_into_final_output_wrapper <- function(check_cols_, final_output_, input_, return_copied_col_names = F)
 {
-  final_output_[[check_cols_$Pub.]] <- input_[[check_cols_$Pub.]]
-  final_output_[[check_cols_$Exp.]] <- input_[[check_cols_$Exp.]]
-  final_output_[[check_cols_$`adj,P,Val`]] <- input_$adj.P.Val
-  final_output_[[check_cols_$`P,Val`]] <- input_$P.Value
-  final_output_[[check_cols_$t]] <- input_$t
-  final_output_[[check_cols_$B]] <- input_$B
-  final_output_[[check_cols_$logFC]] <- input_$logFC
-  final_output_[[check_cols_$ID]] <- input_$ID
+  if (return_copied_col_names == T) {
+    return(paste(
+      c(check_cols_[['Pub.']], check_cols_[['Exp.']], check_cols_[['Comp.']], check_cols_[['adj,P,Val']], check_cols_[['P,Val']], check_cols_[['t']], check_cols_[['B']], check_cols_[['logFC']], check_cols_[['ID']]), 
+      collapse = ', '))
+  }
+  
+  final_output_[[check_cols_[['Pub.']] ]] <- input_[[check_cols_[['Pub.']] ]]
+  final_output_[[check_cols_[['Exp.']] ]] <- input_[[check_cols_[['Exp.']] ]]
+  final_output_[[check_cols_[['Comp.']] ]] <- input_[[check_cols_[['Comp.']] ]]
+  final_output_[[check_cols_[['adj,P,Val']] ]] <- input_[['adj.P.Val']]
+  final_output_[[check_cols_[['P,Value']] ]] <- input_[['P.Value']]
+  final_output_[[check_cols_[['t']] ]] <- input_[['t']]
+  final_output_[[check_cols_[['B']] ]] <- input_[['B']]
+  final_output_[[check_cols_[['logFC']] ]] <- input_[['logFC']]
+  final_output_[[check_cols_[['ID']] ]] <- input_[['ID']]
   
   return(final_output_)
 }

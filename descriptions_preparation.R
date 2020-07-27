@@ -5,7 +5,7 @@ source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/li
 
 descriptions <- list('input' = openxlsx::read.xlsx(xlsxFile = 'Antidepressants_metadata_140520.xlsx', sheet = 'pubs'))
 
-descriptions$input_qa <- verify_df(df_ = descriptions$input, sort_by_col = 'Pub.')
+descriptions$input_qa <- verify_df(df_ = descriptions$input, sort_by_col = set_col_check()[['Exp.']])
 
 
 
@@ -57,7 +57,7 @@ descriptions$input_qa$df$Age_cat[temp_mus_weight_age_40] <- 'adult'
 
 descriptions$output <- dplyr::select(descriptions$input_qa$df, 1:6, 27:28, 7, 29:30, 8:10, 31:32, 11:14, 16:23, 25)
 
-descriptions$output_qa <- verify_df(df_ = descriptions$output, sort_by_col = 'Pub.', only_qa = T)
+descriptions$output_qa <- verify_df(df_ = descriptions$output, sort_by_col = set_col_check()[['Exp.']], only_qa = T)
 
 write.table(x = descriptions$output, file = 'descriptions_for_analysis.tsv', sep = '\t', dec = ',', row.names = F)
 

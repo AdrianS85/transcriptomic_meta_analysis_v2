@@ -20,10 +20,10 @@ source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/bi
 ### !!! add access to add_new_gene_id_col_originating_from_ncbi_annotation only from master_annotator
 master_annotator <- function(
   descriptions_df, 
-  des_paper_id_col, 
+  des_exp_id_col, 
   des_species_col, 
   input_df,
-  input_paper_col,
+  input_exp_id_col,
   input_id_col, # used in: get_the_highest_hit_returning_id_type, annotate_identifiers_to_geneID, annotate_no
   PERFORM_A_should_i_prepare_dbs_for_pseudomemoization = F,
   A_return_qa_of_pseudomemoization = F,
@@ -43,30 +43,30 @@ master_annotator <- function(
   
   
   message('master_annotator: validating description and input column types')
-  validate_col_types(df_ = descriptions_df, col_names_list = list(des_paper_id_col, des_species_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = descriptions_df, col_names_list = list(des_exp_id_col, des_species_col), col_types_list = list('numeric', 'character'))
   
-  validate_col_types(df_ = input_df, col_names_list = list(input_paper_col, input_id_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = input_df, col_names_list = list(input_exp_id_col, input_id_col), col_types_list = list('numeric', 'character'))
 
   
-  message('master_annotator: ordering descriptions and input by paper_id_col')
-  descriptions_df <- descriptions_df[order(descriptions_df[[des_paper_id_col]]),]
-  input_df <- input_df[order(input_df[[input_paper_col]]),]
+  message('master_annotator: ordering descriptions and input by input_exp_id_col')
+  descriptions_df <- descriptions_df[order(descriptions_df[[des_exp_id_col]]),]
+  input_df <- input_df[order(input_df[[input_exp_id_col]]),]
 
   
   
-  message('master_annotator: subsetting des_paper_id_col, des_species_col from descriptions')
+  message('master_annotator: subsetting des_exp_id_col, des_species_col from descriptions')
   exp_species__ <- descriptions_df %>%
-    dplyr::select(des_paper_id_col, des_species_col) %>%
+    dplyr::select(des_exp_id_col, des_species_col) %>%
     unique()
   
-  exp_species__ <- subset(x = exp_species__, subset = exp_species__[[des_paper_id_col]] %in% unique(input_df[[input_paper_col]]))
+  exp_species__ <- subset(x = exp_species__, subset = exp_species__[[des_exp_id_col]] %in% unique(input_df[[input_exp_id_col]]))
   
   message('master_annotator: normalizing species names') ### !!! show which species names are used?
   exp_species__[[des_species_col]] <- normalize_species_names(exp_species__[[des_species_col]])
   
   
-  message('master_annotator: splitting input by paper column')
-  LIST_DATA__ <- split(input_df, f = input_df[[input_paper_col]])
+  message('master_annotator: splitting input by experiment column')
+  LIST_DATA__ <- split(input_df, f = input_df[[input_exp_id_col]])
   ### Prepare secondary input ###
   
   
@@ -88,7 +88,7 @@ master_annotator <- function(
     message('master_annotator: identifying best ensembl-based platforms to be used for analysis')
     highest_hits <- get_the_highest_hit_returning_id_type(
       exp_species_ = exp_species__, 
-      des_paper_id_col_ = des_paper_id_col,
+      des_exp_id_col_ = des_exp_id_col,
       des_species_col_ = des_species_col,
       list_LIST_DATA_ = LIST_DATA__,
       input_probe_col_ = input_id_col,
@@ -113,10 +113,10 @@ master_annotator <- function(
     message('master_annotator: translating all gene names in the data to gene ids using ncbi')
     annotated_with_ncbi <- annotate_identifiers_to_geneID(
       descriptions_df = exp_species__, 
-      desc_paper_id_col_ = des_paper_id_col, 
+      desc_exp_id_col_ = des_exp_id_col, 
       desc_species_col_ = des_species_col, 
       input_df_ = input_df, 
-      input_paper_col_ = input_paper_col, 
+      input_exp_id_col_ = input_exp_id_col, 
       input_id_col_ = input_id_col,
       string_separator_ = A_D_string_separator__,
       chr_gene_identifier_type = C_legacy_D_str_identifier_type__,# should be 'Gene name' for gene name
@@ -128,10 +128,10 @@ master_annotator <- function(
     message('master_annotator: adding ncbi-derived gene ids to original data')
     df_with_new_col <- add_new_gene_id_col_originating_from_ncbi_annotation(
       descriptions_df = exp_species__, 
-      desc_paper_id_col = des_paper_id_col, 
+      desc_exp_id_col = des_exp_id_col, 
       desc_organism_col = des_species_col,
       input_df = input_df, 
-      input_paper_id_col = input_paper_col,
+      input_exp_id_col = input_exp_id_col,
       input_input_id_col = input_id_col, 
       input_organism_col = 'Species', ### !!! We need to make sure, that PERFORM_E step returns input_organism_col exactly the same as desc_organism_col. Then, we need to remove input_organism_col
       perform_ncbi_annotation_output = E_PERFORM_D_output)
@@ -161,7 +161,7 @@ master_annotator <- function(
 
 get_the_highest_hit_returning_id_type <- function(
   exp_species_, 
-  des_paper_id_col_,
+  des_exp_id_col_,
   des_species_col_,
   list_LIST_DATA_,
   input_probe_col_,
@@ -214,7 +214,7 @@ get_the_highest_hit_returning_id_type <- function(
     message( 'Competed whole all_ID_annotations step' )
   }
   
-  names(all_ID_annotations) <- exp_species_[[des_paper_id_col_]]
+  names(all_ID_annotations) <- exp_species_[[des_exp_id_col_]]
   
   # Lists inside main list are changed into dfs (vectors) as 'which' function demands it
   df_all_ID_annotations <- lapply(all_ID_annotations, FUN = unlist)
@@ -228,7 +228,7 @@ get_the_highest_hit_returning_id_type <- function(
       HIGHEST_HIT_LIST[[n]][[m]] <- ANNOT_SHORT_LIST_DATA[[n]][[(which(df_all_ID_annotations[[n]] == max(df_all_ID_annotations[[n]]))[m])]]
     } }
   
-  names(HIGHEST_HIT_LIST) <- exp_species_[[des_paper_id_col_]]
+  names(HIGHEST_HIT_LIST) <- exp_species_[[des_exp_id_col_]]
   
   rm(df_all_ID_annotations)
   
@@ -241,24 +241,24 @@ get_the_highest_hit_returning_id_type <- function(
     .f = function(.x, .y) {  (length(unique(.x[[1]][[1]])) / .y) * 100 }
   )
   
-  check_annotation_percentage <- data.frame(exp_species_[[des_paper_id_col_]], rlist::list.rbind(check_annotation_percentage))
-  colnames(check_annotation_percentage) <- c('Exp_ID', 'highest_annotated_identifier_percentages')
+  check_annotation_percentage <- data.frame(exp_species_[[des_exp_id_col_]], rlist::list.rbind(check_annotation_percentage))
+  colnames(check_annotation_percentage) <- c('Exp_ID', 'highest_annotated_identifier_percentages') ### !!! This should give error as EXP_ID may not be present
   
   # Here we simply copy/establish names of features, that were highest by themselves. The conditions ask: 1) is there at least a single hit with highest number (I dont know if there can be 0 though...) 2) Is the first (and though each) highest hit list has at least single hit?
   NAMES_HIGHEST_HIT_LIST <- lapply(X = HIGHEST_HIT_LIST, FUN = set_0_hit_annotations_to_na)
-  NAMES_HIGHEST_HIT_LIST <- data.frame(exp_species_[[des_paper_id_col_]], rlist::list.rbind(NAMES_HIGHEST_HIT_LIST))
-  colnames(NAMES_HIGHEST_HIT_LIST) <- c('Exp_ID', 'platform_to_use')
+  NAMES_HIGHEST_HIT_LIST <- data.frame(exp_species_[[des_exp_id_col_]], rlist::list.rbind(NAMES_HIGHEST_HIT_LIST))
+  colnames(NAMES_HIGHEST_HIT_LIST) <- c('Exp_ID', 'platform_to_use')  ### !!! This should give error as EXP_ID may not be present
   
   
   ###### Here we estalish correct lists to analyzed in further steps (currently - need to remove experiments with microarrays not captured in ensembl) ######
   ###### Yeah, i dont know what to do here
   WHICH_EXP_TO_ANAL <- seq_along(NAMES_HIGHEST_HIT_LIST[[1]])
   
-  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = check_annotation_percentage, by = 'Exp_ID')
+  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = check_annotation_percentage, by = 'Exp_ID')  ### !!! This should give error as EXP_ID may not be present
   
-  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = exp_species_, by.x = 'Exp_ID', by.y = des_paper_id_col_)
+  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = exp_species_, by.x = 'Exp_ID', by.y = des_exp_id_col_)  ### !!! This should give error as EXP_ID may not be present
   
-  names(ANNOT_SHORT_LIST_DATA) <- exp_species_[[des_paper_id_col_]]
+  names(ANNOT_SHORT_LIST_DATA) <- exp_species_[[des_exp_id_col_]]
   
   id_platf$highest_hit_analysis$id_to_be_used_for_annotation <- as.character(id_platf$highest_hit_analysis$platform_to_use)
   
@@ -509,7 +509,7 @@ annotate_now <- function(
   pseudo_memoized_db_)
 {
   for (n in seq_along(list_LIST_DATA_))
-    # loop through publications
+    # loop through experiments
   {
     if (!is.null(pseudo_memoized_db_)) {
       identifiers_used_for_annotation <- rep(
@@ -518,7 +518,7 @@ annotate_now <- function(
       
       message('annotate_now: performing pseudo-memoized database workflow')
       
-      ### !!! Here add message on which ids are used for given paper
+      ### !!! Here add message on which ids are used for given experiment
       
       if (is.null(list_LIST_DATA_[[n]]$external_gene_name)) {
         list_LIST_DATA_[[n]]$external_gene_name <- NA
@@ -861,16 +861,16 @@ return_all_usable_id_types <- function(ENSG_, ENST_, Gene_ID, NM_, Accession, Un
   
   id_types <- purrr::map2(.x = IDs, .y = names(IDs), .f = function(x,y) 
   {
-    data_for_paper <- list('col_name' = x, 'filter_name' = y)
+    data_for_exp <- list('col_name' = x, 'filter_name' = y)
     
-    vals_in_this_col <- unique(list_LIST_DATA_[[data_for_paper$col_name]])
+    vals_in_this_col <- unique(list_LIST_DATA_[[data_for_exp$col_name]])
     
     vals_in_this_col <- vals_in_this_col[!is.na(vals_in_this_col)]
     
     if (length(vals_in_this_col) == 0) {
       return(NULL)
     } else{
-      return(data_for_paper)
+      return(data_for_exp)
     }
   })
   
@@ -1061,18 +1061,18 @@ pseudo_memoize <- function(pseudo_memoization_db_)
 get_gemma_annotations_for_data <- function(
   descriptions_df,
   des_platform_col,
-  des_paper_id_col,
+  des_exp_id_col,
   named_list_gemma_platforms, #from download_platforms_from_gemma
   gemma_probe_col,
   input_df,
-  input_paper_id_col,
+  input_exp_id_col,
   input_probe_col)
 {
   
   ### Make sure input is proper ###
-  validate_col_types(df_ = descriptions_df, col_names_list = list(des_paper_id_col, des_platform_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = descriptions_df, col_names_list = list(des_exp_id_col, des_platform_col), col_types_list = list('numeric', 'character'))
   
-  validate_col_types(df_ = input_df, col_names_list = list(input_paper_id_col, input_probe_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = input_df, col_names_list = list(input_exp_id_col, input_probe_col), col_types_list = list('numeric', 'character'))
   
   purrr::walk(.x = named_list_gemma_platforms, .f = function(x) {
     if (!is.na(x)) {
@@ -1106,11 +1106,11 @@ get_gemma_annotations_for_data <- function(
     
     
     composite_list[[platform]]$input_list <- purrr::map(
-      .x = unique(composite_list[[platform]]$descriptions[[des_paper_id_col]]), 
+      .x = unique(composite_list[[platform]]$descriptions[[des_exp_id_col]]), 
       .f = function(.x) {
         subset(
           x = input_df, 
-          subset = input_df[[input_paper_id_col]] == .x)
+          subset = input_df[[input_exp_id_col]] == .x)
       })
     
     composite_list[[platform]]$input <- rlist::list.rbind(composite_list[[platform]]$input_list)
@@ -1256,19 +1256,19 @@ GPL8160_post_gemma_wrapper <- function(annotation_raw, divider_of_values_in_seri
 
 annotate_identifiers_to_geneID <- function(
   descriptions_df_,
-  desc_paper_id_col_,
+  desc_exp_id_col_,
   desc_species_col_,
   input_df_,
-  input_paper_col_,
+  input_exp_id_col_,
   input_id_col_,
   chr_gene_identifier_type = 'Gene name',
   string_separator_)
 {
 
-  input_plus_species <- merge(x = input_df_, y = descriptions_df_, by.x = input_paper_col_, by.y = desc_paper_id_col_)
+  input_plus_species <- merge(x = input_df_, y = descriptions_df_, by.x = input_exp_id_col_, by.y = desc_exp_id_col_)
   
   
-  ### !!! here get df with paper names and all unique gene names in the input.
+  ### !!! here get df with exp names and all unique gene names in the input.
   
   unique_input_plus_species <- get_vector_of_single_unique_gene_ids_and_species(
     input_df = input_plus_species, 
@@ -1437,7 +1437,7 @@ make_and_write_table_with_original_and_ncbi_ids <- function(
   colnames(extracted_data_df) <- c('Gene_ID', 'input_id', 'organism')
   rownames(extracted_data_df) <- seq_along(extracted_data_df[[1]])
   
-  extracted_data_df$dummy_paper <- as.numeric(extracted_data_df$organism)
+  extracted_data_df$dummy_exp <- as.numeric(extracted_data_df$organism)
   
   extracted_data_df$Gene_ID <- as.character(extracted_data_df$Gene_ID)
   extracted_data_df$input_id <- as.character(extracted_data_df$input_id)
@@ -1514,11 +1514,11 @@ get_vector_of_single_unique_gene_ids_and_species <- function(
 
 add_new_gene_id_col_originating_from_ncbi_annotation <- function(
   descriptions_df,
-  desc_paper_id_col,
+  desc_exp_id_col,
   desc_organism_col,
   input_df, 
   input_input_id_col,
-  input_paper_id_col,
+  input_exp_id_col,
   input_organism_col, 
   perform_ncbi_annotation_output, 
   output_gene_id_col = 'Gene_ID', 
@@ -1530,11 +1530,11 @@ add_new_gene_id_col_originating_from_ncbi_annotation <- function(
   
   perform_ncbi_annotation_output[[output_organism_col]] <- normalize_species_names(perform_ncbi_annotation_output[[output_organism_col]])
   
-  descriptions_df <- unique(subset(x = descriptions_df, select = c(desc_paper_id_col, desc_organism_col)))
+  descriptions_df <- unique(subset(x = descriptions_df, select = c(desc_exp_id_col, desc_organism_col)))
   
   input_df[[input_organism_col]] <- recode_values_based_on_key(
-    to_recode_chrvec = as.character(input_df[[input_paper_id_col]]), 
-    replace_this_chrvec = as.character(descriptions_df[[desc_paper_id_col]]), 
+    to_recode_chrvec = as.character(input_df[[input_exp_id_col]]), 
+    replace_this_chrvec = as.character(descriptions_df[[desc_exp_id_col]]), 
     with_this_chrvec = descriptions_df[[desc_organism_col]])
   
   input_list <- list()

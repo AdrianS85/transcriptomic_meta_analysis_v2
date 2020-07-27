@@ -1,17 +1,7 @@
-BiocManager::install("DESeq2")
+# BiocManager::install("DESeq2")
 # rm(list = ls(pattern = 'temp.*|test.*'))
-source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
-source('functions_pre_preparation.R')
-
-
-opts_seq_glob <- list(
-  'decimal' = ',',
-  # 'input_col_types' = 'cccnnnnncccccccccccccccccc',
-  # 'numeric_col_types' = c(4:8),
-  'dir_input' = 'geo/seq',
-  'dir_output' = 'geo/geo_r',
-  'check_cols' = set_col_check()
-)
+# source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
+# source('functions_pre_preparation.R')
 
 
 
@@ -19,9 +9,9 @@ opts_seq_glob <- list(
 #################
 ### GSE110256 ###
 #################
-#rpkm normalization or counts
+#counts
 seq_GSE110256 <- list(
-  'dir' = paste0(opts_seq_glob$dir_input, '/GSE110256')
+  'dir' = paste0(opts$dir_seq_input, '/GSE110256')
 )
 
 # These should be done only once
@@ -82,16 +72,16 @@ seq_GSE110256$analyses_done_reformated <- purrr::map2(
     
     x <- subset(x = x, subset = x$pvalue < 0.05)
     
-    properly_formated_data <- set_df_for_append(check_cols_ = opts_seq_glob$check_cols, length = length(x[[1]]))
+    properly_formated_data <- set_df_for_append(check_cols_ = opts$check_cols_for_input, length = length(x[[1]]))
     
-    properly_formated_data[[opts_seq_glob$check_cols$`Pub.`]] <- seq_GSE110256$design$Pub.[[1]]
-    properly_formated_data[[opts_seq_glob$check_cols$`Exp.`]] <- as.character(recode_values_based_on_key(to_recode_chrvec = y, replace_this_chrvec = seq_GSE110256$design$treatment[10:23], with_this_chrvec = seq_GSE110256$design$Exp.[10:23]))
-    properly_formated_data[[opts_seq_glob$check_cols$`P,Value`]] <- x$pvalue
-    properly_formated_data[[opts_seq_glob$check_cols$`adj,P,Val`]] <- x$padj
-    properly_formated_data[[opts_seq_glob$check_cols$logFC]] <- x$log2FoldChange
+    properly_formated_data[[opts$check_cols_for_input[['Exp.']] ]] <- seq_GSE110256$design[['Exp.']][[1]]
+    properly_formated_data[[opts$check_cols_for_input[['Comp.']] ]] <- as.character(recode_values_based_on_key(to_recode_chrvec = y, replace_this_chrvec = seq_GSE110256$design$treatment[10:23], with_this_chrvec = seq_GSE110256$design[['Comp.']][10:23]))
+    properly_formated_data[[opts$check_cols_for_input$`P,Value`]] <- x$pvalue
+    properly_formated_data[[opts$check_cols_for_input$`adj,P,Val`]] <- x$padj
+    properly_formated_data[[opts$check_cols_for_input$logFC]] <- x$log2FoldChange
     temp_ENSG_ <- stringr::str_remove(string = rownames(x), pattern = '___.*')
-    properly_formated_data[[opts_seq_glob$check_cols$ENSG_]] <- stringr::str_remove(string = temp_ENSG_, pattern = '\\..*')
-    properly_formated_data[[opts_seq_glob$check_cols$Symbol]] <- stringr::str_remove(string = rownames(x), pattern = '.*___')
+    properly_formated_data[[opts$check_cols_for_input$ENSG_]] <- stringr::str_remove(string = temp_ENSG_, pattern = '\\..*')
+    properly_formated_data[[opts$check_cols_for_input$Symbol]] <- stringr::str_remove(string = rownames(x), pattern = '.*___')
 
     return(properly_formated_data)
     
@@ -99,30 +89,12 @@ seq_GSE110256$analyses_done_reformated <- purrr::map2(
 
 seq_GSE110256$output <- rlist::list.rbind(.data = seq_GSE110256$analyses_done_reformated)
 
-write.table(x = seq_GSE110256$output, file = paste0(opts_seq_glob$dir_output, '/GSE110256_prepared.tsv'), sep = '\t', row.names = F, dec = ',')
-
-
+write.table(x = seq_GSE110256$output, file = paste0(opts$dir_r_downloaded_data, '/GSE110256_prepared.tsv'), sep = '\t', row.names = F, dec = ',')
 #################
 ### GSE110256 ###
 #################
 
-# #Create DESeqDataSet object
-# seq_GSE110256$deseq_test <- DESeq2::DESeqDataSetFromMatrix(
-#   countData = seq_GSE110256$analyses_to_do$bupropion$count_matrix, 
-#   colData =  seq_GSE110256$analyses_to_do$bupropion$design, 
-#   design = ~treatment)
-# 
-# #Filter low count rows
-# # seq_GSE110256$deseq_test_rows_to_keep <- rowSums(counts(seq_GSE110256$deseq_test)) >= 10
-# # seq_GSE110256$deseq_test <- seq_GSE110256$deseq_test[seq_GSE110256$deseq_test$rows_to_keep,]
-# 
-# #Set reference to proper factor
-# seq_GSE110256$deseq_test$treatment <- relevel(seq_GSE110256$deseq_test$treatment, ref = "control")
-# 
-# #Calculate results and get result table
-# seq_GSE110256$deseq_test <- DESeq2::DESeq(seq_GSE110256$deseq_test)
-# seq_GSE110256$deseq_test_results <- DESeq2::results(seq_GSE110256$deseq_test)
-# seq_GSE110256$deseq_test_results_df <- as.data.frame(seq_GSE110256$deseq_test_results)
+
 
 
 
@@ -153,7 +125,7 @@ write.table(x = seq_GSE110256$output, file = paste0(opts_seq_glob$dir_output, '/
 #################
 #fpkm normalization - rnaseqGene/cufflinks
 seq_GSE117174 <- list(
-  'dir' = paste0(opts_seq_glob$dir_input, '/GSE117174')
+  'dir' = paste0(opts$dir_seq_input, '/GSE117174')
 )
 
 # dir.create(seq_GSE117174$dir)
@@ -184,7 +156,7 @@ names(seq_GSE117174$input_list) <- stringr::str_remove(string = seq_GSE117174$sa
 #################
 
 
-
+unique(data_annotation$input$data_NOT_for_probe_annotation$Pub.)
 
 
 
@@ -195,7 +167,7 @@ names(seq_GSE117174$input_list) <- stringr::str_remove(string = seq_GSE117174$sa
 # counts divided by sample-specific size factors determined by median ratio of gene counts relative to geometric mean per gene - https://hbctraining.github.io/DGE_workshop/lessons/02_DGE_count_normalization.html
 
 seq_GSE129143 <- list(
-  'dir' = paste0(opts_seq_glob$dir_input, '/GSE129143')
+  'dir' = paste0(opts$dir_seq_input, '/GSE129143')
 )
 
 dir.create(seq_GSE129143$dir)
@@ -382,3 +354,24 @@ seq_GSE129143$input_only_samples_of_interest <- subset(seq_GSE129143$input, sele
 # GSM3272904	NAc_KETp2		
 # GSM3272905	NAc_KETp3		
 # GSM3272906	NAc_KETp4
+
+
+
+
+# #Create DESeqDataSet object
+# seq_GSE110256$deseq_test <- DESeq2::DESeqDataSetFromMatrix(
+#   countData = seq_GSE110256$analyses_to_do$bupropion$count_matrix, 
+#   colData =  seq_GSE110256$analyses_to_do$bupropion$design, 
+#   design = ~treatment)
+# 
+# #Filter low count rows
+# # seq_GSE110256$deseq_test_rows_to_keep <- rowSums(counts(seq_GSE110256$deseq_test)) >= 10
+# # seq_GSE110256$deseq_test <- seq_GSE110256$deseq_test[seq_GSE110256$deseq_test$rows_to_keep,]
+# 
+# #Set reference to proper factor
+# seq_GSE110256$deseq_test$treatment <- relevel(seq_GSE110256$deseq_test$treatment, ref = "control")
+# 
+# #Calculate results and get result table
+# seq_GSE110256$deseq_test <- DESeq2::DESeq(seq_GSE110256$deseq_test)
+# seq_GSE110256$deseq_test_results <- DESeq2::results(seq_GSE110256$deseq_test)
+# seq_GSE110256$deseq_test_results_df <- as.data.frame(seq_GSE110256$deseq_test_results)

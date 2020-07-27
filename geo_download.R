@@ -1,733 +1,727 @@
-library(Biobase)
-library(GEOquery)
-library(limma)
-source('functions_GEO_download.R')
+source('opts.R')
+# rm(list = ls(pattern = 'temp.*|test.*'))
+
+# opts_comparisons_76 <- prepare_comparisons_for_exp_GSE119291_wrapper()
+# checked - means 1) length of dataset and 2 random genes logFC vs geo2r script for given dataset selected during different batch check-up, 2) list values vs meta-data descriptions
 
 
-
-
-
-### PUBLICATION 36 / GSE47541 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL17223",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Search_key","ProbeId","Gid","Transcript","GB_ACC","Symbol","Definition"),
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-
-analysis_specific_opts <- list(
-  'Pub.' = 36,
-  'Exp.' = 1,
-  'sample_comp' = paste0('cortex'),
-  'series' = "GSE47541",
-  'group_design' = paste0('XXXXXXX11110000XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+#########################
+### PREPARE PLATFORMS ###
+#########################
+opts_geo_dl <- list(
+  'GPL1261' = list(
+    'platform' = "GPL1261",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
+    'AnnotGPL' = T),
+  'GPL5425' = list(
+    'platform' = 'GPL5425',
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
+    'AnnotGPL' = T),
+  'GPL6246' = list(
+    'platform' = "GPL6246",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
+    'AnnotGPL' = T),
+  'GPL6885' = list(
+    'platform' = "GPL6885",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","GI","GenBank.Accession"),
+    'AnnotGPL' = T),
+  'GPL6887' = list(
+    'platform' = "GPL6887",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
+    'AnnotGPL' = T),
+  'GPL8160' = list(
+    'platform' = "GPL8160",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","GB_ACC"),
+    'AnnotGPL' = F),
+  'GPL10427' = list(
+    'platform' = "GPL10427",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","accessions","ProbeUID","ProbeName","GeneName","SystematicName","Description","GB_LIST"),
+    'AnnotGPL' = F),
+  'GPL13912' = list(
+    'platform' = "GPL13912",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","NAME","GB_ACC","GENE_ID","GENE_SYMBOL","GENE_NAME","UNIGENE_ID","ENSEMBL_ID","ACCESSION_STRING","DESCRIPTION"),
+    'AnnotGPL' = F),
+  'GPL16570' = list(
+    'platform' = "GPL16570",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","probeset_id","gene_assignment","mrna_assignment","swissprot","unigene"),
+    'AnnotGPL' = F),
+  "GPL17223" = list(
+    'platform' = "GPL17223",
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Search_key","ProbeId","Gid","Transcript","GB_ACC","Symbol","Definition"),
+    'AnnotGPL' = F),
+  'GPL25480' = list(
+    'platform' = 'GPL25480',
+    'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","SPOT_ID"),
+    'AnnotGPL' = F)
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_36_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_36_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-
-### 1 ###
+#########################
+### PREPARE PLATFORMS ###
+#########################
 
 
 
-### 2 ###
-
-analysis_specific_opts <- list(
-  'Pub.' = 36,
-  'Exp.' = 2,
-  'sample_comp' = paste0('hippocampus'),
-  'series' = "GSE47541",
-  'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXX11110000XXXXXXXXXXXXXXX')
+###########################
+### PREPARE COMPARISONS ###
+###########################
+opts_geo_dl[['GPL1261']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 70,
+    'Exp.' = 37,
+    'Comp.' = 1,
+    'sample_comp' = 'S100a10_bacTRAP',
+    'series' = "GSE35761",
+    'group_design' = paste0('101010')), #checked
+  '2' = list(
+    'Pub.' = 70,
+    'Exp.' = 37,
+    'Comp.' = 2,
+    'sample_comp' = 'Glt25d2_bacTRAP',
+    'series' = "GSE35763",
+    'group_design' = paste0('101010')), #checked
+  '3' = list(
+    'Pub.' = 70,
+    'Exp.' = 37,
+    'Comp.' = 3,
+    'sample_comp' = 'p11_KO_S100a10_bacTRAP',
+    'series' = "GSE35765",
+    'group_design' = paste0('110010')), #checked
+  '4' = list(
+    'Pub.' = 77,
+    'Exp.' = 43,
+    'Comp.' = 1,
+    'sample_comp' = '30_mg',
+    'series' = "GSE63469",
+    'group_design' = paste0('011X0X')), #checked
+  '5' = list(
+    'Pub.' = 77,
+    'Exp.' = 43,
+    'Comp.' = 2,
+    'sample_comp' = '100_mg',
+    'series' = "GSE63469",
+    'group_design' = paste0('0XX101')), #checked
+  '6' = list(
+    'Pub.' = 78,
+    'Exp.' = 44,
+    'Comp.' = 1,
+    'sample_comp' = 'cortex',
+    'series' = "GSE118668",
+    'group_design' = paste0('1111111100000000')), #checked
+  '7' = list(
+    'Pub.' = 78,
+    'Exp.' = 44,
+    'Comp.' = 2,
+    'sample_comp' = 'hippocampus',
+    'series' = "GSE118669",
+    'group_design' = paste0('1111111100000000')), #checked
+  '8' = list(
+    'Pub.' = 66,
+    'Exp.' = 34,
+    'Comp.' = 1,
+    'sample_comp' = 'none',
+    'series' = "GSE6476",
+    'group_design' = paste0('0011')) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_36_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_36_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-
-### 2 ###
 
 
 
-### 3 ###
 
-analysis_specific_opts <- list(
-  'Pub.' = 36,
-  'Exp.' = 3,
-  'sample_comp' = paste0('dorsal_raphe'),
-  'series' = "GSE47541",
-  'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX11110000')
+
+opts_geo_dl[['GPL5425']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 2,
+    'sample_comp' = 'paroxetine_1d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['paroxetine_1d']]), #checked
+  '2' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 3,
+    'sample_comp' = 'paroxetine_3d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['paroxetine_3d']]), #checked
+  '3' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 4,
+    'sample_comp' = 'paroxetine_5d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['paroxetine_5d']]), #checked
+  '4' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 6,
+    'sample_comp' = 'phenelzine_1d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['phenelzine_1d']]), #checked
+  '5' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 7,
+    'sample_comp' = 'phenelzine_3d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['phenelzine_3d']]), #checked
+  '6' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 8,
+    'sample_comp' = 'phenelzine_5d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['phenelzine_5d']]), #checked
+  '7' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 14,
+    'sample_comp' = 'tramadol_1d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['tramadol_1d']]), #checked
+  '8' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 15,
+    'sample_comp' = 'tramadol_3d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['tramadol_3d']]), #checked
+  '9' = list(
+    'Pub.' = 71,
+    'Exp.' = 38,
+    'Comp.' = 16,
+    'sample_comp' = 'tramadol_5d',
+    'series' = "GSE59895",
+    'group_design' = GSE59895_group_design()[['tramadol_5d']]) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_36_3 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_36_3, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-
-### 3 ###
-### PUBLICATION 36 / GSE47541 ###
 
 
 
 
 
-### PUBLICATION 66 / GSE6476 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL1261",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
-                     'p_cutoff' = 0.05)
-
-analysis_specific_opts <- list(
-  'Pub.' = 66,
-  'Exp.' = 1,
-  'sample_comp' = paste0('none'),
-  'series' = "GSE6476",
-  'group_design' = paste0('0011')
+opts_geo_dl[['GPL6246']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 67,
+    'Exp.' = 35,
+    'Comp.' = 1,
+    'sample_comp' = 'none',
+    'series' = "GSE26364",
+    'group_design' = paste0('0011')) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_66_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_66_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### PUBLICATION 66 / GSE6476 ###
 
 
 
 
 
-### PUBLICATION 68 / GSE26836 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL6885",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","GI","GenBank.Accession"),
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Pub.' = 68,
-  'Exp.' = 1,
-  'sample_comp' = paste0('cortex'),
-  'series' = "GSE26836",
-  'group_design' = paste0('XXXXXX111000')
+opts_geo_dl[['GPL6885']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 68,
+    'Exp.' = 36,
+    'Comp.' = 1,
+    'sample_comp' = 'cortex',
+    'series' = "GSE26836",
+    'group_design' = paste0('XXXXXX111000')), #checked
+  '2' = list(
+    'Pub.' = 68,
+    'Exp.' = 36,
+    'Comp.' = 2,
+    'sample_comp' = 'hippocampus',
+    'series' = "GSE26836",
+    'group_design' = paste0('000111XXXXXX')), #checked
+  '3' = list(
+    'Pub.' = 28,
+    'Exp.' = 18,
+    'Comp.' = 1,
+    'sample_comp' = 'HA',
+    'series' = "GSE27532",
+    'group_design' = paste0('XXXXXXXX11110000')), #checked
+  '4' = list(
+    'Pub.' = 28,
+    'Exp.' = 18,
+    'Comp.' = 2,
+    'sample_comp' = 'LA',
+    'series' = "GSE27532",
+    'group_design' = paste0('11110000XXXXXXXX')) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_68_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_68_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-
-### 1 ###
 
 
-### 2 ###
-analysis_specific_opts <- list(
-  'Pub.' = 68,
-  'Exp.' = 2,
-  'sample_comp' = paste0('hippocampus'),
-  'series' = "GSE26836",
-  'group_design' = paste0('000111XXXXXX')
+
+
+opts_geo_dl[['GPL6887']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 1,
+    'sample_comp' = 'hippocampus_1h',
+    'series' = "GSE73798",
+    'group_design' = paste0('1XXXX0XXXXXX1XXXXXXXXXXXXXXX0XXXXXXXXXXXXXXXXX0X1XXXXXXXXXXX')), #checked
+  '2' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 2,
+    'sample_comp' = 'hippocampus_2h',
+    'series' = "GSE73798",
+    'group_design' = paste0('XXXXXXXXXXXXXXXXX01XXXX0XXXXXXXXXXXX1XXXXXXXXXXXXXXXX01XXXXX')), #checked
+  '3' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 3,
+    'sample_comp' = 'hippocampus_4h',
+    'series' = "GSE73798",
+    'group_design' = paste0('XXXXXX1XXXXXXXXXXXXXXXXXXXXXXX1XXXX0XXXXX01XXXXXXXXXXXXXXXX0')), #checked
+  '4' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 4,
+    'sample_comp' = 'hippocampus_8h',
+    'series' = "GSE73798",
+    'group_design' = paste0('X1XXXXXXXXX0XXXXXXXXXXXX1XXXX0XXXXXXXXXXXXXXXXX0X1XXXXXXXXXX')), #checked
+  '5' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 5,
+    'sample_comp' = 'striatum_1h',
+    'series' = "GSE73799",
+    'group_design' = paste0('XXXXXX1XXXX0XXXX0X1XXXXXXXXXXXXXXXXXXXXX0X1XXXXXXXXXXXXXXXXX')), #checked
+  '6' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 6,
+    'sample_comp' = 'striatum_2h',
+    'series' = "GSE73799",
+    'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXX01XXXX01XXXXXXXXXXXXXXXX01XXXXXXXXXXX')), #checked
+  '7' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 7,
+    'sample_comp' = 'striatum_4h',
+    'series' = "GSE73799",
+    'group_design' = paste0('1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX01XXXXXXXXXXXXXXXX01XXXX0')), #checked
+  '8' = list(
+    'Pub.' = 72,
+    'Exp.' = 39,
+    'Comp.' = 8,
+    'sample_comp' = 'striatum_8h',
+    'series' = "GSE73799",
+    'group_design' = paste0('XXXXX0X1XXXX1XXXX0XXXXXXXXXXXXXXXXXXXXXXX0X1XXXXXXXXXXXXXXXX')), #checked
+  '9' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 1,
+    'sample_comp' = 'mianserin_1h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['mianserin_1h']]),  #checked
+  '10' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 2,
+    'sample_comp' = 'imipramine_1h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['imipramine_1h']]), #checked
+  '11' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 3,
+    'sample_comp' = 'fluoxetine_1h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['fluoxetine_1h']]), #checked
+  '12' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 4,
+    'sample_comp' = 'bupropion_1h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['bupropion_1h']]), #checked
+  '13' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 5,
+    'sample_comp' = 'tianeptine_1h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tianeptine_1h']]), #checked
+  '14' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 6,
+    'sample_comp' = 'tranylcypromine_1h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tranylcypromine_1h']]), #checked
+  '15' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 7,
+    'sample_comp' = 'mianserin_2h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['mianserin_2h']]), #checked
+  '16' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 8,
+    'sample_comp' = 'imipramine_2h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['imipramine_2h']]), #checked
+  '17' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 9,
+    'sample_comp' = 'fluoxetine_2h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['fluoxetine_2h']]), #checked
+  '18' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 10,
+    'sample_comp' = 'bupropion_2h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['bupropion_2h']]), #checked
+  '19' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 11,
+    'sample_comp' = 'tianeptine_2h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tianeptine_2h']]), #checked
+  '20' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 12,
+    'sample_comp' = 'tranylcypromine_2h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tranylcypromine_2h']]), #checked
+  '21' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 13,
+    'sample_comp' = 'mianserin_4h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['mianserin_4h']]), #checked
+  '22' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 14,
+    'sample_comp' = 'imipramine_4h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['imipramine_4h']]), #checked
+  '23' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 15,
+    'sample_comp' = 'fluoxetine_4h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['fluoxetine_4h']]), #checked
+  '24' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 16,
+    'sample_comp' = 'bupropion_4h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['bupropion_4h']]), #checked
+  '25' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 17,
+    'sample_comp' = 'tianeptine_4h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tianeptine_4h']]), #checked
+  '26' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 18,
+    'sample_comp' = 'tranylcypromine_4h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tranylcypromine_4h']]), #checked
+  '27' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 19,
+    'sample_comp' = 'mianserin_8h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['mianserin_8h']]), #checked
+  '28' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 20,
+    'sample_comp' = 'imipramine_8h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['imipramine_8h']]), #checked
+  '29' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 21,
+    'sample_comp' = 'fluoxetine_8h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['fluoxetine_8h']]), #checked
+  '30' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 22,
+    'sample_comp' = 'bupropion_8h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['bupropion_8h']]), #checked
+  '31' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 23,
+    'sample_comp' = 'tianeptine_8h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tianeptine_8h']]), #checked
+  '32' = list(
+    'Pub.' = 33,
+    'Exp.' = 20,
+    'Comp.' = 24,
+    'sample_comp' = 'tranylcypromine_8h',
+    'series' = "GSE48955",
+    'group_design' = GSE48955_group_design()[['tranylcypromine_8h']]) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_68_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_68_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-### PUBLICATION 68 / GSE26836 ###
 
 
 
 
 
-### PUBLICATION 67 / GSE26364 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL6246",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
-                     'p_cutoff' = 0.05)
-
-analysis_specific_opts <- list(
-  'Pub.' = 67,
-  'Exp.' = 1,
-  'sample_comp' = paste0('none'),
-  'series' = "GSE26364",
-  'group_design' = paste0('0011')
+opts_geo_dl[['GPL8160']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 34,
+    'Exp.' = 21,
+    'Comp.' = 1,
+    'sample_comp' = 'none',
+    'series' = "GSE42940",
+    'group_design' = paste0('00001111')) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_67_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_67_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-
-### PUBLICATION 67 / GSE26364 ###
 
 
 
 
 
-### PUBLICATION 70 / GSE35761-GSE35763-GSE35765 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL1261",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Pub.' = 70,
-  'Exp.' = 1,
-  'sample_comp' = paste0('S100a10_bacTRAP'),
-  'series' = "GSE35761",
-  'group_design' = paste0('101010')
+opts_geo_dl[['GPL10427']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 60,
+    'Exp.' = 32,
+    'Comp.' = 1,
+    'sample_comp' = 'hippocampus',
+    'series' = "GSE97916",
+    'group_design' = paste0('0001111XXXXXXXXX')), #checked
+  '2' = list(
+    'Pub.' = 60,
+    'Exp.' = 32,
+    'Comp.' = 2,
+    'sample_comp' = 'hypothalamus',
+    'series' = "GSE82016",
+    'group_design' = paste0('0001111XXXXXXXXX')),#checked
+  '3' = list(
+    'Pub.' = 45,
+    'Exp.' = 26,
+    'Comp.' = 1,
+    'sample_comp' = 'none',
+    'series' = "GSE76110",
+    'group_design' = paste0('00011111XXXXXXXX')) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
 
-analysis_70_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_70_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
 
-### 2 ###
-analysis_specific_opts <- list(
-  'Pub.' = 70,
-  'Exp.' = 2,
-  'sample_comp' = paste0('Glt25d2_bacTRAP'),
-  'series' = "GSE35763",
-  'group_design' = paste0('101010')
+
+
+opts_geo_dl[['GPL13912']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 52,
+    'Exp.' = 29,
+    'Comp.' = 1,
+    'sample_comp' = 'hippocampus',
+    'series' = "GSE84183",
+    'group_design' = paste0('00000000XXXXXXXXXXXXXXXX11111111XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')), #checked
+  '2' = list(
+    'Pub.' = 52,
+    'Exp.' = 29,
+    'Comp.' = 2,
+    'sample_comp' = 'cortex',
+    'series' = "GSE84183",
+    'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX00000000XXXXXXXXXXXXXXXX11111111')) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
 
-analysis_70_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_70_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
 
-### 3 ###
-analysis_specific_opts <- list(
-  'Pub.' = 70,
-  'Exp.' = 3,
-  'sample_comp' = paste0('p11_KO_S100a10_bacTRAP'),
-  'series' = "GSE35765",
-  'group_design' = paste0('110010')
+
+
+opts_geo_dl[['GPL16570']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 56,
+    'Exp.' = 30,
+    'Comp.' = 1,
+    'sample_comp' = 'none',
+    'series' = "GSE93041",
+    'group_design' = paste0('000XXX111')), #checked
+  '2' = list(
+    'Pub.' = 50,
+    'Exp.' = 28,
+    'Comp.' = 1,
+    'sample_comp' = 'amitriptyline',
+    'series' = "GSE63005",
+    'group_design' = paste0('11XX00XXXXXX')), #checked
+  '3' = list(
+    'Pub.' = 50,
+    'Exp.' = 28,
+    'Comp.' = 2,
+    'sample_comp' = 'citalopram',
+    'series' = "GSE63005",
+    'group_design' = paste0('XX1100XXXXXX')), #checked
+  '4' = list(
+    'Pub.' = 50,
+    'Exp.' = 28,
+    'Comp.' = 3,
+    'sample_comp' = 'duloxetine',
+    'series' = "GSE63005",
+    'group_design' = paste0('XXXX0011XXXX')), #checked
+  '5' = list(
+    'Pub.' = 50,
+    'Exp.' = 28,
+    'Comp.' = 4,
+    'sample_comp' = 'imipramine',
+    'series' = "GSE63005",
+    'group_design' = paste0('XXXX00XX11XX')), #checked
+  '6' = list(
+    'Pub.' = 50,
+    'Exp.' = 28,
+    'Comp.' = 5,
+    'sample_comp' = 'mirtazapine',
+    'series' = "GSE63005",
+    'group_design' = paste0('XXXX00XXXX11')) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_70_3 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_70_3, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 3 ###
-
-### PUBLICATION 70 / GSE35761-GSE35763-GSE35765 ###
 
 
 
 
 
-### PUBLICATION 77 / GSE63469 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL1261",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
-                     'p_cutoff' = 0.05)
+opts_geo_dl[['GPL17223']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 36,
+    'Exp.' = 22,
+    'Comp.' = 1,
+    'sample_comp' = 'cortex',
+    'series' = "GSE47541",
+    'group_design' = paste0('XXXXXXX11110000XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')), #checked
+  '2' = list(
+    'Pub.' = 36,
+    'Exp.' = 22,
+    'Comp.' = 2,
+    'sample_comp' = 'hippocampus',
+    'series' = "GSE47541",
+    'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXX11110000XXXXXXXXXXXXXXX')), #checked
+  '3' = list(
+    'Pub.' = 36,
+    'Exp.' = 22,
+    'Comp.' = 3,
+    'sample_comp' = 'dorsal_raphe',
+    'series' = "GSE47541",
+    'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX11110000'))
+) #checked
 
-### 1 ###
-analysis_specific_opts <- list(
-  'Pub.' = 77,
-  'Exp.' = 1,
-  'sample_comp' = paste0('30_mg'),
-  'series' = "GSE63469",
-  'group_design' = paste0('011X0X')
+
+
+
+opts_geo_dl[['GPL25480']][['comps']] <- list(
+  '1' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 1,
+    'sample_comp' = paste0('bupropion_control'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['one']]), #checked
+  '2' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 2,
+    'sample_comp' = paste0('phenelzine_control'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['two']]), #checked
+  '3' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 3,
+    'sample_comp' = paste0('trazodone_control'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['three']]), #checked
+  '4' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 4,
+    'sample_comp' = paste0('tranylcypromine_control'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['four']]), #checked
+  '5' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 5,
+    'sample_comp' = paste0('bupropion_SZ'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['five']]), #checked
+  '6' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 6,
+    'sample_comp' = paste0('phenelzine_SZ'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['six']]), #checked
+  '7' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 7,
+    'sample_comp' = paste0('trazodone_SZ'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['seven']]), #checked
+  '8' = list(
+    'Pub.' = 76,
+    'Exp.' = 42,
+    'Comp.' = 8,
+    'sample_comp' = paste0('tranylcypromine_SZ'),
+    'series' = "GSE119291",
+    'group_design' = GSE119291_group_design()[['eight']]) #checked
 )
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
+###########################
+### PREPARE COMPARISONS ###
+###########################
+
+
+
+#####################
+### DOWNLOAD DATA ###
+#####################
+geo2r_download <- purrr::map(.x = opts_geo_dl, .f = function(platform_)
+{
+  comparison_download <- purrr::map(
+    .x = platform_[['comps']],
+    .f = function(comp){
+      
+      name <- paste(comp[['Exp.']], comp[['Comp.']], comp[['sample_comp']], comp[['series']], platform_[['platform']], sep = '_')
+      
+      table <- get_full_topTable(
+        series_ = comp[['series']],
+        platform_ = platform_[['platform']],
+        group_names_ = comp[['group_design']],
+        col_names_ = platform_[['col_names']],
+        p_cutoff_ = 0.05,
+        AnnotGPL_ = platform_[['AnnotGPL']]) #checked
+
+      write.table(
+        x = table,
+        file = paste0(opts$dir_r_downloaded_data, '/', name, '.tsv'),
+        sep = '\t',
+        row.names = F,
+        dec = ',')
+
+      named_table <- list()
+      named_table[[name]] <- table
+      
+      return(named_table)
+    })
+  
+  return(comparison_download)
+})
+
+geo2r_download <- rlist::list.ungroup(rlist::list.ungroup(geo2r_download))
+
+save(geo2r_download, file = paste0(opts$dir_r_downloaded_data, '/geo2r_download'))
+#####################
+### DOWNLOAD DATA ###
+#####################
 
-analysis_77_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_77_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
 
-### 2 ###
-analysis_specific_opts <- list(
-  'Pub.' = 77,
-  'Exp.' = 2,
-  'sample_comp' = paste0('100_mg'),
-  'series' = "GSE63469",
-  'group_design' = paste0('0XX101')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_77_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_77_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-
-### PUBLICATION 77 / GSE63469 ###
-
-
-
-
-
-### PUBLICATION 78 / GSE118668-GSE118669 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL1261",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI"),
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Pub.' = 78,
-  'Exp.' = 1,
-  'sample_comp' = paste0('cortex'),
-  'series' = "GSE118668",
-  'group_design' = paste0('1111111100000000')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_78_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_78_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
-
-### 2 ###
-analysis_specific_opts <- list(
-  'Pub.' = 78,
-  'Exp.' = 2,
-  'sample_comp' = paste0('hippocampus'),
-  'series' = "GSE118669",
-  'group_design' = paste0('1111111100000000')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_78_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_78_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-
-### PUBLICATION 78 / GSE118668-GSE118669 ###
-
-
-
-
-
-### PUBLICATION 28 / GSE27532 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL6885",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Pub.' = 28,
-  'Exp.' = 1,
-  'sample_comp' = paste0('HA'),
-  'series' = "GSE27532",
-  'group_design' = paste0('XXXXXXXX11110000')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_28_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_28_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
-
-### 2 ###
-analysis_specific_opts <- list(
-  'Pub.' = 28,
-  'Exp.' = 2,
-  'sample_comp' = paste0('LA'),
-  'series' = "GSE27532",
-  'group_design' = paste0('11110000XXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_28_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_28_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-
-### PUBLICATION 28 / GSE27532 ###
-
-
-
-
-
-### PUBLICATION 72 / GSE73798-GSE73799 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL6887",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 1,
-  'sample_comp' = paste0('hippocampus_1h'),
-  'series' = "GSE73798",
-  'group_design' = paste0('1XXXX0XXXXXX1XXXXXXXXXXXXXXX0XXXXXXXXXXXXXXXXX0X1XXXXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
-
-### 2 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 2,
-  'sample_comp' = paste0('hippocampus_2h'),
-  'series' = "GSE73798",
-  'group_design' = paste0('XXXXXXXXXXXXXXXXX01XXXX0XXXXXXXXXXXX1XXXXXXXXXXXXXXXX01XXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-
-### 3 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 3,
-  'sample_comp' = paste0('hippocampus_4h'),
-  'series' = "GSE73798",
-  'group_design' = paste0('XXXXXX1XXXXXXXXXXXXXXXXXXXXXXX1XXXX0XXXXX01XXXXXXXXXXXXXXXX0')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_3 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_3, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 3 ###
-
-### 4 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 4,
-  'sample_comp' = paste0('hippocampus_8h'),
-  'series' = "GSE73798",
-  'group_design' = paste0('X1XXXXXXXXX0XXXXXXXXXXXX1XXXX0XXXXXXXXXXXXXXXXX0X1XXXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_4 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_4, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 4 ###
-
-### 5 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 5,
-  'sample_comp' = paste0('striatum_1h'),
-  'series' = "GSE73799",
-  'group_design' = paste0('XXXXXX1XXXX0XXXX0X1XXXXXXXXXXXXXXXXXXXXX0X1XXXXXXXXXXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_5 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_5, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 5 ###
-
-### 6 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 6,
-  'sample_comp' = paste0('striatum_2h'),
-  'series' = "GSE73799",
-  'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXX01XXXX01XXXXXXXXXXXXXXXX01XXXXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_6 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_6, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 6 ###
-
-### 7 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 7,
-  'sample_comp' = paste0('striatum_4h'),
-  'series' = "GSE73799",
-  'group_design' = paste0('1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX01XXXXXXXXXXXXXXXX01XXXX0')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_7 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_7, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 7 ###
-
-### 8 ###
-analysis_specific_opts <- list(
-  'Pub.' = 72,
-  'Exp.' = 8,
-  'sample_comp' = paste0('striatum_8h'),
-  'series' = "GSE73799",
-  'group_design' = paste0('XXXXX0X1XXXX1XXXX0XXXXXXXXXXXXXXXXXXXXXXX0X1XXXXXXXXXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_72_8 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
-
-write.table(x = analysis_72_8, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 8 ###
-
-### PUBLICATION 72 / GSE73798-GSE73799 ###
-
-
-
-
-
-### PUBLICATION 60 / GSE97916-GSE82016 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL10427",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","accessions","ProbeUID","ProbeName","GeneName","SystematicName","Description","GB_LIST"),
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Pub.' = 60,
-  'Exp.' = 1,
-  'sample_comp' = paste0('hippocampus'),
-  'series' = "GSE97916",
-  'group_design' = paste0('0001111XXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_60_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_60_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
-
-
-### 2 ###
-analysis_specific_opts <- list(
-  'Pub.' = 60,
-  'Exp.' = 2,
-  'sample_comp' = paste0('hypothalamus'),
-  'series' = "GSE82016",
-  'group_design' = paste0('0001111XXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_60_2 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_60_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-
-
-### PUBLICATION 60 / GSE97916-GSE82016 ###
-
-
-
-
-
-### PUBLICATION 45 / GSE76110 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL10427",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","accessions","ProbeUID","ProbeName","GeneName","SystematicName","Description","GB_LIST"),
-                     'p_cutoff' = 0.05)
-
-analysis_specific_opts <- list(
-  'Pub.' = 45,
-  'Exp.' = 1,
-  'sample_comp' = paste0('none'),
-  'series' = "GSE76110",
-  'group_design' = paste0('00011111XXXXXXXX')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_45_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_45_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### PUBLICATION 45 / GSE76110 ###
-
-
-
-
-
-### PUBLICATION 34 / GSE42940 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL8160",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","GB_ACC"),
-                     'p_cutoff' = 0.05)
-
-analysis_specific_opts <- list(
-  'Pub.' = 34,
-  'Exp.' = 1,
-  'sample_comp' = paste0('none'),
-  'series' = "GSE42940",
-  'group_design' = paste0('00001111')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_34_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_34_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### PUBLICATION 34 / GSE42940 ###
-
-
-
-
-
-### PUBLICATION 56 / GSE93041 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL16570",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","probeset_id","gene_assignment","mrna_assignment","swissprot","unigene"),
-                     'p_cutoff' = 0.05)
-
-analysis_specific_opts <- list(
-  'Pub.' = 56,
-  'Exp.' = 1,
-  'sample_comp' = paste0('none'),
-  'series' = "GSE93041",
-  'group_design' = paste0('000XXX111')
-)
-analysis_specific_opts$name <- paste(analysis_specific_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, analysis_specific_opts$series, general_opts$platform, sep = '_')
-
-analysis_56_1 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_56_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### PUBLICATION 56 / GSE93041 ###
-
-
-
-
-
-### PUBLICATION 50 / GSE63005 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL16570",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","probeset_id","gene_assignment","mrna_assignment","swissprot","unigene"),
-                     'Pub.' = 50,
-                     'series' = "GSE63005",
-                     'p_cutoff' = 0.05)
-
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Exp.' = 1,
-  'sample_comp' = paste0('amitriptyline'),
-  'group_design' = paste0('11XX00XXXXXX')
-)
-analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, general_opts$series, general_opts$platform, sep = '_')
-
-analysis_50_1 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_50_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
-
-
-
-### 2 ###
-analysis_specific_opts <- list(
-  'Exp.' = 2,
-  'sample_comp' = paste0('citalopram'),
-  'group_design' = paste0('XX1100XXXXXX')
-)
-analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, general_opts$series, general_opts$platform, sep = '_')
-
-analysis_50_2 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_50_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-
-
-### 3 ###
-analysis_specific_opts <- list(
-  'Exp.' = 3,
-  'sample_comp' = paste0('duloxetine'),
-  'group_design' = paste0('XXXX0011XXXX')
-)
-analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, general_opts$series, general_opts$platform, sep = '_')
-
-analysis_50_3 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_50_3, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 3 ###
-
-
-### 4 ###
-analysis_specific_opts <- list(
-  'Exp.' = 4,
-  'sample_comp' = paste0('imipramine'),
-  'group_design' = paste0('XXXX00XX11XX')
-)
-analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, general_opts$series, general_opts$platform, sep = '_')
-
-analysis_50_4 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_50_4, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 4 ###
-
-
-### 5 ###
-analysis_specific_opts <- list(
-  'Exp.' = 5,
-  'sample_comp' = paste0('mirtazapine'),
-  'group_design' = paste0('XXXX00XXXX11')
-)
-analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, general_opts$series, general_opts$platform, sep = '_')
-
-analysis_50_5 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_50_5, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 5 ###
-### PUBLICATION 50 / GSE63005 ###
-
-
-
-
-
-
-### PUBLICATION 52 / GSE84183 ###
-general_opts <- list('dir' = 'geo/geo_r',
-                     'platform' = "GPL13912",
-                     'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","NAME","GB_ACC","GENE_ID","GENE_SYMBOL","GENE_NAME","UNIGENE_ID","ENSEMBL_ID","ACCESSION_STRING","DESCRIPTION"),
-                     'series' = "GSE84183",
-                     'Pub.' = 52,
-                     'p_cutoff' = 0.05)
-
-### 1 ###
-analysis_specific_opts <- list(
-  'Exp.' = 1,
-  'sample_comp' = paste0('hippocampus'),
-  'group_design' = paste0('00000000XXXXXXXXXXXXXXXX11111111XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-)
-analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, general_opts$series, general_opts$platform, sep = '_')
-
-analysis_52_1 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_52_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 1 ###
-
-
-
-### 2 ###
-analysis_specific_opts <- list(
-  'Exp.' = 2,
-  'sample_comp' = paste0('cortex'),
-  'group_design' = paste0('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX00000000XXXXXXXXXXXXXXXX11111111')
-)
-analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$Exp., analysis_specific_opts$sample_comp, general_opts$series, general_opts$platform, sep = '_')
-
-analysis_52_2 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
-
-write.table(x = analysis_52_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
-### 2 ###
-### PUBLICATION 52 / GSE84183 ###
-
-
-
-
-##############################
-### ADDITIONAL EXPERIMENTS ###
-##############################
-
-##############################
-### ADDITIONAL EXPERIMENTS ###
-##############################
 
 
 
@@ -743,10 +737,12 @@ write.table(x = analysis_52_2, file = paste0(general_opts$dir, '/', analysis_spe
 
 
 
-# tT <- topTable(fit2, adjust="fdr", sort.by="B", number=length(fit2$genes[[1]]))
-# 
-# tT <- subset(tT, tT$P.Value < 0.05)
-# 
-# rm(cont.matrix, design, ex, fit, fit2, gset, tT, fl, gsms, i, idx, lofC, qx, sml)
 
+tT <- topTable(fit2, adjust="fdr", sort.by="B", number=length(fit2$genes[[1]]))
 
+tT <- subset(tT, tT$P.Value < 0.05)
+
+rm(cont.matrix, design, ex, fit, fit2, gset, tT, fl, gsms, i, idx, lofC, qx, sml)
+###############
+### TESTING ###
+###############

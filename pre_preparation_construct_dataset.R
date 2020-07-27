@@ -1,29 +1,33 @@
 # rm(list = ls(pattern = 'temp.*|test.*'))
 source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
 source('functions_pre_preparation.R')
+source('opts.R')
+library(loggit)
 
-gen_opts_const <- list(
-  'dir_r' = 'geo/geo_r',
-  'check_cols' = set_col_check(),
-  'decimal' = ',',
-  'input_col_types' = 'nncnnnnnccccccccccccccccc',
-  'numeric_col_types' = c(4:8)
-)
+dir.create(opts$cons_da$folder)
+set_logfile(paste0(opts$cons_da$folder, "/construct_dataset.log"))
 
 
 input_data <- list(
   'pre-input' = purrr::map(
-    .x = list.files(path = gen_opts_const$dir_r, pattern = '.*_prepared.*'), 
+    .x = list.files(path = opts$dir_r_downloaded_data, pattern = opts$cons_dat$select_prepared_data_regex), 
     .f = function(x){
-      readr::read_tsv(file = paste0(gen_opts_const$dir_r, '/', x), col_types = gen_opts_const$input_col_types, locale = readr::locale(decimal_mark = gen_opts_const$decimal))
+      readr::read_tsv(
+        file = paste0(opts$dir_r_downloaded_data, '/', x), 
+        col_types = opts$cons_dat$input_col_types, 
+        locale = readr::locale(decimal_mark = opts$decimal))
     })
 )
 
-are_vectors_the_same(chr_vec_list = purrr::map(.x = input_data$`pre-input`,.f =  colnames))
+are_vectors_the_same(chr_vec_list = purrr::map(
+  .x = input_data[['pre-input']],
+  .f =  colnames))
 
-input_data$input <- rlist::list.rbind(.data = input_data$`pre-input`)
+input_data$input <- rlist::list.rbind(.data = input_data[['pre-input']])
 
-input_data$QA_checklist_input <- get_input_QA_checklist(input_table_ = input_data$input, Pub._col_ = 'Pub.')
+input_data$QA_checklist_input <- get_input_QA_checklist(
+  input_table_ = input_data[['input']], 
+  Pub._col_ = 'Pub.')
 
 #Remove columns without single value
 input_data$input$NP_ <- NULL
@@ -42,13 +46,23 @@ input_data$input_reformated <- purrr::map_dfc(
   .x = input_data$input, 
   .f = function(x){
     if (class(x) == 'character') {
-      remove_corrupting_symbols_from_chrvec(chr_vec = x, repeated_spaces = T, trailing_spaces = T, character_NAs = T, change_to_lower = F)
+      remove_corrupting_symbols_from_chrvec(
+        chr_vec = x, 
+        repeated_spaces = T, 
+        trailing_spaces = T, 
+        character_NAs = T, 
+        change_to_lower = F)
     } else x
 })
 
 input_data$input_reformated <- input_data$input_reformated[order(input_data$input_reformated[['Pub.']], input_data$input_reformated[['Exp.']]),]
 
-write.table(x = input_data$input_reformated, file = 'input_data_for_analysis.tsv', sep = '\t', dec = ',', row.names = F)
+write.table(
+  x = input_data$input_reformated, 
+  file = 'input_data_for_analysis.tsv', 
+  sep = '\t', 
+  dec = ',', 
+  row.names = F)
 
 
 
@@ -56,17 +70,17 @@ write.table(x = input_data$input_reformated, file = 'input_data_for_analysis.tsv
 
 
 
-test <- input_data$input_reformated
-
-test <- test[order(test[['Pub.']], test[['Exp.']]),]
-
-test_probes_yes <- subset(x = test, subset = !is.na(test$Probe), select = c('Probe', 'Pub.', 'Exp.'))
-
-test_probes_no <- subset(x = test, subset = is.na(test$Probe), select = c('Probe', 'Pub.', 'Exp.'))
-
-length(test_probes_yes[[1]]) + length(test_probes_no[[1]]) == length(test[[1]])
-
-test_any_probe <- purrr::map_lgl(.x = unique(test_probes_yes$Pub.), .f = function(x){ x %in% unique(test_probes_no$Pub.)})
+# test <- input_data$input_reformated
+# 
+# test <- test[order(test[['Pub.']], test[['Exp.']]),]
+# 
+# test_probes_yes <- subset(x = test, subset = !is.na(test$Probe), select = c('Probe', 'Pub.', 'Exp.'))
+# 
+# test_probes_no <- subset(x = test, subset = is.na(test$Probe), select = c('Probe', 'Pub.', 'Exp.'))
+# 
+# length(test_probes_yes[[1]]) + length(test_probes_no[[1]]) == length(test[[1]])
+# 
+# test_any_probe <- purrr::map_lgl(.x = unique(test_probes_yes$Pub.), .f = function(x){ x %in% unique(test_probes_no$Pub.)})
 
 
 
