@@ -1,6 +1,6 @@
 # rm(list = ls(pattern = 'temp.*|test.*'))
-source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
-source('opts.R')
+# source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
+# source('opts.R')
 
 
 
@@ -56,120 +56,132 @@ load_all_exps_from_paper <- function(dir_r_, pattern_, decimal_)
 
 
 
-get_sep_all_identifiers <- function(input_df_name, bad_cols_to_process_seq, GPL_ID)
-{
-  temp_list <- list()
-  
-  if (GPL_ID == 'GPL16570') {
-    temp_list <- lapply(
-      X = bad_cols_to_process_seq,
-      FUN = function(x) {
-        temp <- stringr::str_replace_all(string = input_df_name[[x]], pattern = ' /// ', replacement = ' // ')
-        
-        as.data.frame(stringr::str_split_fixed(string = temp, pattern = ' // ', n = Inf))
-      }
-    )
-  } else if (GPL_ID == 'GPL13912') {
-    temp_list <- lapply(
-      X = bad_cols_to_process_seq,
-      FUN = function(x) {
-        as.data.frame(stringr::str_split_fixed(string = input_df_name[[x]], pattern = '\\|', n = Inf))
-      } 
-    )
-  } else if (GPL_ID == 'R') {
-    temp_list <- lapply(
-      X = bad_cols_to_process_seq,
-      FUN = function(x) {
-        as.data.frame(stringr::str_split_fixed(string = input_df_name[[x]], pattern = '___', n = Inf))
-      } 
-    )
-  }
-  
-  sep_all_identifiers <- rlist::list.cbind(temp_list)
-  
-  return(sep_all_identifiers)
-}
+# get_sep_all_identifiers <- function(input_df_name, cols_to_process_seq) #GPL_ID
+# {
+#   temp_list <- list()
+#   
+#   # if (GPL_ID == 'GPL16570') {
+#   #   temp_list <- lapply(
+#   #     X = cols_to_process_seq,
+#   #     FUN = function(x) {
+#   #       temp <- stringr::str_replace_all(string = input_df_name[[x]], pattern = ' /// ', replacement = ' // ')
+#   #       
+#   #       as.data.frame(stringr::str_split_fixed(string = temp, pattern = ' // ', n = Inf))
+#   #     }
+#   #   )
+#   # } else if (GPL_ID == 'GPL13912') {
+#   #   temp_list <- lapply(
+#   #     X = cols_to_process_seq,
+#   #     FUN = function(x) {
+#   #       as.data.frame(stringr::str_split_fixed(string = input_df_name[[x]], pattern = '\\|', n = Inf))
+#   #     } 
+#   #   )
+#   # } else if (GPL_ID == 'R') {
+#     temp_list <- lapply(
+#       X = cols_to_process_seq,
+#       FUN = function(x) {
+#         as.data.frame(stringr::str_split_fixed(string = input_df_name[[x]], pattern = opts$pre_prep_reform$bind_sep, n = Inf))
+#       }
+#     )
+#   # }
+#   
+#   sep_all_identifiers <- rlist::list.cbind(temp_list)
+#   
+#   return(sep_all_identifiers)
+# }
 
 
+# results_list$] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^NM_')"))
+# results_list$search_by[check_cols_[['ENST_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^ENS.*T')"))
+# results_list$search_by[check_cols_[['ENSG_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^ENS.*G')"))
+# results_list$search_by[check_cols_[['Gene_ID']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^[0-9]*$')"))
+# results_list$search_by[check_cols_[['Accession']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^[A-Z]{1,2}[0-9]*$')"))
+# results_list$search_by[check_cols_[['Unigene']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^Mm(?![a-zA-Z]|[0-9]|[ ])')"))
+# results_list$search_by[check_cols_[['XM_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^XM_')"))
+# results_list$search_by[check_cols_[['XR_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^XR_')"))
+# results_list$search_by[check_cols_[['NR_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^NR_')"))
+# results_list$search_by[check_cols_[['NP_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^NP_')"))
+# results_list$search_by[check_cols_[['XP_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^XP_')"))
+# results_list$search_by['LOC'] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^LOC')"))
+# results_list$search_by[check_cols_[['Symbol']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^[a-zA-Z]{1,6}(?![a-zA-Z]|[ ]|[:])|.*Rik$')"))
 
-
-extract_identifers <- function(sep_all_identifiers_, search_by_, output_, opts_pre_check_cols, range_of_cols_with_IDs_start, range_of_cols_with_IDs_end)
+extract_identifers <- function(sep_all_identifiers_, search_by, output_, opts_pre_check_cols, range_of_cols_with_IDs_start, range_of_cols_with_IDs_end)
 {
   oc <- opts_pre_check_cols
   
   for (row_nb in seq(length(sep_all_identifiers_[[1]]))) {
     
     row <- unique(t(sep_all_identifiers_[row_nb,]))
+    row <- row[row %nin% c('NA', '')]
+    
     
     for(identifer in row)
     {
-      if (eval(parse(text = search_by_$NM_))) {
+      if (eval(parse(text = search_by[oc[['NM_']]]))) {
         output_[row_nb,oc[['NM_']]] <- paste(output_[row_nb,oc[['NM_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$ENST_))){
+      } else if (eval(parse(text = search_by[oc[['ENST_']]]))){
         output_[row_nb,oc[['ENST_']]] <- paste(output_[row_nb,oc[['ENST_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$ENSG_))){
+      } else if (eval(parse(text = search_by[oc[['ENSG_']]]))){
         output_[row_nb,oc[['ENSG_']]] <- paste(output_[row_nb,oc[['ENSG_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$Gene_ID))){
+      } else if (eval(parse(text = search_by[oc[['Gene_ID']]]))){
         output_[row_nb,oc[['Gene_ID']]] <- paste(output_[row_nb,oc[['Gene_ID']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$Accession))){
+      } else if (eval(parse(text = search_by[oc[['Accession']]]))){
         output_[row_nb,oc[['Accession']]] <- paste(output_[row_nb,oc[['Accession']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$Unigene))){
+      } else if (eval(parse(text = search_by[oc[['Unigene']]]))){
         output_[row_nb,oc[['Unigene']]] <- paste(output_[row_nb,oc[['Unigene']]], identifer, sep = ', ')
-      } else if (eval(parse(text = search_by_$XM_))){
+      } else if (eval(parse(text = search_by[oc[['XM_']]]))){
         output_[row_nb,oc[['XM_']]] <- paste(output_[row_nb,oc[['XM_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$XR_))){
+      } else if (eval(parse(text = search_by[oc[['XR_']]]))){
         output_[row_nb,oc[['XR_']]] <- paste(output_[row_nb,oc[['XR_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$NR_))){
+      } else if (eval(parse(text = search_by[oc[['NR_']]]))){
         output_[row_nb,oc[['NR_']]] <- paste(output_[row_nb,oc[['NR_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$NP_))){
+      } else if (eval(parse(text = search_by[oc[['NP_']]]))){
         output_[row_nb,oc[['NP_']]] <- paste(output_[row_nb,oc[['NP_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      } else if (eval(parse(text = search_by_$XP_))){
+      } else if (eval(parse(text = search_by[oc[['XP_']]]))){
         output_[row_nb,oc[['XP_']]] <- paste(output_[row_nb,oc[['XP_']]], stringr::str_remove(string = identifer, pattern = ' .*'), sep = ', ')
-      }  else if (eval(parse(text = search_by_$LOC))){
+      }  else if (eval(parse(text = search_by['LOC']))){
         identifer_loc_removed <- stringr::str_remove(string = stringr::str_remove(string = identifer, pattern = ' .*'), pattern = 'LOC')
         output_[row_nb,oc[['Gene_ID']]] <- paste(output_[row_nb,oc[['Gene_ID']]], identifer_loc_removed, sep = ', ')
-      } else if (eval(parse(text = search_by_$Symbol))){
+      } else if (eval(parse(text = search_by[oc[['Symbol']]]))){
         output_[row_nb,oc[['Symbol']]] <- paste(output_[row_nb,oc[['Symbol']]], identifer, sep = ', ')
       }
     }
   }
   
   output_[range_of_cols_with_IDs_start:range_of_cols_with_IDs_end] <- purrr::map_dfc(output_[range_of_cols_with_IDs_start:range_of_cols_with_IDs_end], .f = function(x){
-    temp <- stringr::str_remove(string = x, pattern = 'NA, ')
-    temp_1 <- stringr::str_remove(string = temp, pattern = ', $')
-    temp_2 <- stringr::str_remove(string = temp_1, pattern = ', NA')
-    temp_3 <- stringr::str_remove(string = temp_2, pattern = 'NA')
-    temp_4 <- stringr::str_remove(string = temp_3, pattern = '^, ')
+    temp <- stringr::str_remove_all(string = x, pattern = '^NA, ')
+    temp_1 <- stringr::str_remove_all(string = temp, pattern = ', NA$')
+    temp_2 <- stringr::str_replace_all(string = temp_1, pattern = ', NA,', replacement = ',')
+    # temp_1 <- stringr::str_remove(string = temp, pattern = ', $')
+    # temp_4 <- stringr::str_remove(string = temp_3, pattern = '^, ')
   })
-  output_[output_ == ''] <- NA
+  output_[output_ == 'NA'] <- NA
   
   return(output_)
 }
 
 
 
-set_search_bys <- function(input_df_, search_by_p1_, search_by_n_, check_cols_)
+set_search_bys <- function(search_by_n_, check_cols_)
 {
-  results_list <- list(
-    'search_by_p1' = search_by_p1_, 
-    'search_by_n' = search_by_n_)
-
-  results_list$search_by[check_cols_$NM_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^NM_')"))
-  results_list$search_by[check_cols_$ENST_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^ENS.*T')"))
-  results_list$search_by[check_cols_$ENSG_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^ENS.*G')"))
-  results_list$search_by[check_cols_$Gene_ID] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^[0-9]*$')"))
-  results_list$search_by[check_cols_$Accession] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^[A-Z]{1,2}[0-9]*$')"))
-  results_list$search_by[check_cols_$Unigene] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^Mm(?![a-zA-Z]|[0-9]|[ ])')"))
-  results_list$search_by[check_cols_$XM_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^XM_')"))
-  results_list$search_by[check_cols_$XR_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^XR_')"))
-  results_list$search_by[check_cols_$NR_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^NR_')"))
-  results_list$search_by[check_cols_$NP_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^NP_')"))
-  results_list$search_by[check_cols_$XP_] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^XP_')"))
-  results_list$search_by['LOC'] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^LOC')"))
-  results_list$search_by[check_cols_$Symbol] = list(paste0(results_list$search_by_p1, results_list$search_by_n, ", pattern = '^[a-zA-Z]{1,6}(?![a-zA-Z]|[ ]|[:])|.*Rik$')"))
-
-  results_list$output <- input_df_
+  results_list <- list()
   
+  search_by_p1 <- "stringr::str_detect(string = " 
+
+  results_list$search_by[check_cols_[['NM_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^NM_')"))
+  results_list$search_by[check_cols_[['ENST_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^ENS.*T')"))
+  results_list$search_by[check_cols_[['ENSG_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^ENS.*G')"))
+  results_list$search_by[check_cols_[['Gene_ID']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^[0-9]*$')"))
+  results_list$search_by[check_cols_[['Accession']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^[A-Z]{1,2}[0-9]*$')"))
+  results_list$search_by[check_cols_[['Unigene']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^Mm(?![a-zA-Z]|[0-9]|[ ])')"))
+  results_list$search_by[check_cols_[['XM_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^XM_')"))
+  results_list$search_by[check_cols_[['XR_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^XR_')"))
+  results_list$search_by[check_cols_[['NR_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^NR_')"))
+  results_list$search_by[check_cols_[['NP_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^NP_')"))
+  results_list$search_by[check_cols_[['XP_']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^XP_')"))
+  results_list$search_by['LOC'] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^LOC')"))
+  results_list$search_by[check_cols_[['Symbol']]] <- list(paste0(search_by_p1, search_by_n_, ", pattern = '^[a-zA-Z]{1,6}(?![a-zA-Z]|[ ]|[:])|.*Rik$')"))
+
   return(results_list)
 }
 
@@ -228,7 +240,7 @@ set_df_for_append <- function(check_cols_, length)
   
   df_ <- purrr::map_dfc(
     .x = check_cols_, 
-    .f = function(x) { as.character(rep(NA, length)) })
+    .f = function(x) { as.character(column_) })
   
   colnames(df_) <- as.character(check_cols_)
   
@@ -236,16 +248,16 @@ set_df_for_append <- function(check_cols_, length)
 }
 
 
-
+### !!! Removing Pub. column!
 copy_out_of_box_ready_columns_into_final_output_wrapper <- function(check_cols_, final_output_, input_, return_copied_col_names = F)
 {
   if (return_copied_col_names == T) {
     return(paste(
-      c(check_cols_[['Pub.']], check_cols_[['Exp.']], check_cols_[['Comp.']], check_cols_[['adj,P,Val']], check_cols_[['P,Val']], check_cols_[['t']], check_cols_[['B']], check_cols_[['logFC']], check_cols_[['ID']]), 
+      c(check_cols_[['Exp.']], check_cols_[['Comp.']], check_cols_[['adj,P,Val']], check_cols_[['P,Val']], check_cols_[['t']], check_cols_[['B']], check_cols_[['logFC']], check_cols_[['ID']]), 
       collapse = ', '))
   }
   
-  final_output_[[check_cols_[['Pub.']] ]] <- input_[[check_cols_[['Pub.']] ]]
+  # Input colnames are provided automatically by geo2r, and so they are stable
   final_output_[[check_cols_[['Exp.']] ]] <- input_[[check_cols_[['Exp.']] ]]
   final_output_[[check_cols_[['Comp.']] ]] <- input_[[check_cols_[['Comp.']] ]]
   final_output_[[check_cols_[['adj,P,Val']] ]] <- input_[['adj.P.Val']]
@@ -289,38 +301,31 @@ prepare_noncorrupted_symbol_col <- function(symbol_col_)
 
 
 
-prepare_noncorrupted_NXMR_col <- function(nxmr_col_)
-{
-  nxmr_col_ <- stringr::str_remove(string = nxmr_col_, pattern = ' $')
-  
-  nxmr_col_ <- stringr::str_remove_all(string = nxmr_col_, pattern = '\\.[0-9]{1,}')
-  
-  return(nxmr_col_)
-}
 
 
 
-get_input_QA_checklist <- function(input_table_, Pub._col_)
-{
-  input_QA_checklist_ <- list (
-    'are_all_pub_present' = unique(input_table_[[Pub._col_]]),
-    'are_all_cols_noncorrupted' = get_all_symbols_in_df_per_column(input_table_),
-    'col_types' = purrr::map(.x = input_table_, class),
-    'numeric_range' = purrr::map(.x = input_table_, .f = function(x) {ifelse(test = class(x) == 'numeric', yes = paste0(min(x[!is.na(x)]), ' - ', max(x[!is.na(x)])), no = NA)}),
-    'number_of_NAs' = purrr::map(.x = input_table_, .f = function(x){length(x[is.na(x)])}),
-    'percent_of_NAs' = purrr::map(.x = input_table_, .f = function(x){length(x[is.na(x)])/length(x)}))
-  
-  return(input_QA_checklist_)
-}
+
+# get_input_QA_checklist <- function(input_table_, Exp_col_)
+# {
+#   input_QA_checklist_ <- list (
+#     'are_all_pub_present' = unique(input_table_[[Exp_col_]]),
+#     'are_all_cols_noncorrupted' = get_all_symbols_in_df_per_column(input_table_),
+#     'col_types' = purrr::map(.x = input_table_, class),
+#     'numeric_range' = purrr::map(.x = input_table_, .f = function(x) {ifelse(test = class(x) == 'numeric', yes = paste0(min(x[!is.na(x)]), ' - ', max(x[!is.na(x)])), no = NA)}),
+#     'number_of_NAs' = purrr::map(.x = input_table_, .f = function(x){length(x[is.na(x)])}),
+#     'percent_of_NAs' = purrr::map(.x = input_table_, .f = function(x){length(x[is.na(x)])/length(x)}))
+#   
+#   return(input_QA_checklist_)
+# }
 
 
 
 prepare_uncorrupted_GPL10427_accessions_wrapper <- function(GPL10427_accessions)
 {
-  temp1 <- stringr::str_replace_all(string = GPL10427_accessions, pattern = '\\|', replacement = '___')
+  temp1 <- stringr::str_replace_all(string = GPL10427_accessions, pattern = '\\|', replacement = opts$pre_prep_reform$bind_sep)
   temp2 <- stringr::str_remove_all(string = temp1, pattern = 'ug|ref')
-  temp3 <- stringr::str_remove(string = temp2, pattern = '^___')
-  temp4 <- stringr::str_replace_all(string = temp3, pattern = '_{4,}', replacement = '___')
+  temp3 <- stringr::str_remove(string = temp2, pattern = paste0('^', opts$pre_prep_reform$bind_sep))
+  temp4 <- stringr::str_replace_all(string = temp3, pattern = '_{4,}', replacement = opts$pre_prep_reform$bind_sep)
   
   return(temp4)
 }
@@ -331,8 +336,8 @@ prepare_uncorrupted_GPL10427_accessions_wrapper <- function(GPL10427_accessions)
 prepare_noncorrupted_GPL16570_cols <- function(GPL16570_cols)
 {
   GPL16570_cols[GPL16570_cols == '---'] <- NA
-  GPL16570_cols <- stringr::str_replace_all(string = GPL16570_cols, pattern = ' /// ', replacement = '___')
-  GPL16570_cols <- stringr::str_replace_all(string = GPL16570_cols, pattern = ' // ', replacement = '___')
+  GPL16570_cols <- stringr::str_replace_all(string = GPL16570_cols, pattern = ' /// ', replacement = opts$pre_prep_reform$bind_sep)
+  GPL16570_cols <- stringr::str_replace_all(string = GPL16570_cols, pattern = ' // ', replacement = opts$pre_prep_reform$bind_sep)
   
   return(GPL16570_cols)
 }
@@ -342,26 +347,26 @@ prepare_noncorrupted_GPL16570_cols <- function(GPL16570_cols)
 
 prepare_uncorrupted_GPL10427_accessions_wrapper <- function(GPL10427_accessions)
 {
-  temp1 <- stringr::str_replace_all(string = GPL10427_accessions, pattern = '\\|', replacement = '___')
+  temp1 <- stringr::str_replace_all(string = GPL10427_accessions, pattern = '\\|', replacement = opts$pre_prep_reform$bind_sep)
   temp2 <- stringr::str_remove_all(string = temp1, pattern = 'ug|ref')
-  temp3 <- stringr::str_remove(string = temp2, pattern = '^___')
-  temp4 <- stringr::str_replace_all(string = temp3, pattern = '_{4,}', replacement = '___')
+  temp3 <- stringr::str_remove(string = temp2, pattern = paste0('^', opts$pre_prep_reform$bind_sep))
+  temp4 <- stringr::str_replace_all(string = temp3, pattern = '_{4,}', replacement = opts$pre_prep_reform$bind_sep)
+  temp4[temp4 == ''] <- NA
   
   return(temp4)
 }
 
 prepare_uncorrupted_GPL13912_ACCESSION_STRING_wrapper <- function(GPL13912_ACCESSION_STRING)
 {
-  temp1 <- stringr::str_replace_all(string = GPL13912_ACCESSION_STRING, pattern = '\\|', replacement = '___')
+  temp1 <- stringr::str_replace_all(string = GPL13912_ACCESSION_STRING, pattern = '\\|', replacement = opts$pre_prep_reform$bind_sep)
   temp2 <- stringr::str_remove_all(string = temp1, pattern = 'ref|ens|gb|tc|riken|nap')
-  temp3 <- stringr::str_remove(string = temp2, pattern = '^___')
-  temp4 <- stringr::str_replace_all(string = temp3, pattern = '_{4,}', replacement = '___')
-  temp5 <- stringr::str_remove(string = temp4, pattern = '(chr)([0-9]{1,2}|x|y|X|Y):.*___')
-  temp6 <- stringr::str_remove(string = temp5, pattern = '(chr)([0-9]{1,2}|x|y|X|Y):.*')
-  temp7 <- stringr::str_remove(string = temp6, pattern = '(, )$')
-  temp7[temp7 == ''] <- NA
+  temp3 <- stringr::str_remove(string = temp2, pattern = paste0('^', opts$pre_prep_reform$bind_sep))
+  temp4 <- stringr::str_replace_all(string = temp3, pattern = '_{4,}', replacement = opts$pre_prep_reform$bind_sep)
+  temp5 <- stringr::str_remove(string = temp4, pattern = '(chr)([0-9]{1,2}|x|y|X|Y):.*') # For this plaftorm, chromosome ID is present only when no other id can be found. I think.
+  temp6 <- stringr::str_remove(string = temp5, pattern = '(, )$')
+  temp6[temp6 == ''] <- NA
   
-  return(temp7)
+  return(temp6)
 }
 
 
@@ -523,3 +528,57 @@ age_category_wrapper <- function(age_col, age_days_col, species_col, return_test
   } else return(age$age_cat)
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+compare_sample_rows_in_i_vs_o <- function(in_df, out_df, analysis_name, sample_size = 100, should_i_order_dfs_before_sampling = F, order_by_in_col = NA, order_by_out_col = NA, write_to_folder = NA, drop_i_cols = NA, drop_o_cols = NA, sep_for_write = '\t', dec_for_write = ',')
+{
+  if (length(in_df[[1]]) != length(out_df[[2]])) { 
+    warning(paste0('input has different lenght than output. this function compares. ', analysis_name, ' was not performed'))
+    return(list('in' = NA, 'out' = NA))}
+  
+  if (all(rownames(in_df) == seq_along(rownames(in_df))) & all(rownames(out_df) == seq_along(rownames(out_df)))) {
+    in_df <- in_df[order(row.names(in_df)),]
+    out_df <- out_df[order(row.names(out_df)),]
+  } else {
+    warning(paste0('rownames of input or output are not sequence of numbers ', analysis_name, ' was not performed'))
+    return(list('in' = NA, 'out' = NA))}
+
+  sample_ <- sample(x = seq_along(in_df[[1]]), size = sample_size)
+
+  input <- subset(x = in_df, subset = rownames(in_df) %in% sample_)
+  output <- subset(x = out_df, subset = rownames(out_df) %in% sample_)
+
+  if (!is.na(drop_i_cols)) {
+    input <- dplyr::select(.data = input, -drop_i_cols) }
+  if (!is.na(drop_o_cols)) {
+    output <- dplyr::select(.data = output, -drop_o_cols) }
+
+  if (!is.na(write_to_folder)) {
+    i_file_name <- paste0(write_to_folder, '/test_input_', analysis_name, '.tsv')
+    o_file_name <- paste0(write_to_folder, '/test_output_', analysis_name, '.tsv')
+  } else {
+    i_file_name <- paste0('test_input_', analysis_name, '.tsv')
+    o_file_name <- paste0('test_output_', analysis_name, '.tsv')
+  }
+
+  write.table(x = input, file = i_file_name, sep = sep_for_write, dec = dec_for_write, row.names = F)
+  write.table(x = output, file = o_file_name, sep = sep_for_write, dec = dec_for_write, row.names = F)
+
+  return(list('in' = input, 'out' = output))
+}
+

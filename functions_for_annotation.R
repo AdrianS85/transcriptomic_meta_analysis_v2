@@ -5,8 +5,8 @@ default::default(message) <- list(echo = F)
 
 
 
-source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
-source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/bioinfo_little_helpers.R')
+# source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
+# source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/bioinfo_little_helpers.R')
 # source('little_helpers_backup.R')
 # source('bioinfo_little_helpers_backup.R')
 

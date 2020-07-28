@@ -1,4 +1,3 @@
-source('functions_for_annotation.R')
 source('opts.R')
 
 library(loggit)
@@ -7,6 +6,100 @@ default::default(message) <- list(echo = F)
 ### !!! need to add step which checks wheter all papers have unique platforms
 ### !!! acutally, we need to use experiment id, instead of paper id, which has the same platform... species is implied then. perhaps lets call it dataset?
 ### !!! I need to fork and secure devtools::install_github('PavlidisLab/gemmaAPI.R')
+
+
+
+
+
+
+##############################################
+### IDENTIFY PLATFORM FOR PROBE ANNOTATION ###
+##############################################
+### Read in the table with description of experiments. They need to have the same identifiers as data in PRE_DATA, that is: Paper(int), Experiment(chr). Also needs Species(chr) column, if probe_id identification function or ncbi query tool is to be used
+load(paste0(opts$pre_prep_reform$folder, '/pre_prep_reform')) ### !!!
+
+data_annotation <- list(
+  'descriptions' = readr::read_tsv(
+    file = 'descriptions_for_analysis.tsv', 
+    col_types = 'nnnccccnccnccccncccccccnnccncc', 
+    locale = readr::locale(decimal_mark = ',')),
+  'pre_input' = NA,
+  'input' = NA,
+  'probes_direct' = NA,
+  'gemma' = NA,
+  'identifers' = NA,
+  'symbols' = NA
+)
+
+
+
+data_annotation[['pre_input']][['data']] <- pre_prep_reform$combined$data, ### !!! ? load(paste0(opts$pre_prep_reform$folder, '/pre_prep_reform'))
+rm(pre_prep_reform) ### !!!
+
+id_platf[['sample_input']] <- dplyr::sample_n(tbl = id_platf[['input']], size = 2500)
+
+
+### !!! use proper input, not sample input, when doing proper analysis
+id_platf[['input_pubs_with_probes']] <- unique(subset(
+  x = id_platf[['sample_input']], 
+  subset = !is.na(id_platf[['sample_input']][[opts$check_cols_for_input[['Probe']]]]))[[opts$check_cols_for_input[['Exp.']]]])
+
+id_platf[['pubs_for_probe_analysis']][['input']] <- subset(
+  x = id_platf[['sample_input']], 
+  subset = id_platf[['sample_input']][[opts$check_cols_for_input[['Exp.']]]] %in% id_platf[['input_pubs_with_probes']])
+
+id_platf[['pubs_NOT_for_probe_analysis']][['input']] <- subset(
+  x = id_platf[['sample_input']], 
+  subset = id_platf[['sample_input']][[opts$check_cols_for_input[['Exp.']]]] %nin% id_platf[['input_pubs_with_probes']])
+
+length(id_platf[['sample_input']][[1]]) == length(id_platf[['pubs_for_probe_analysis']][['input']][[1]]) + length(id_platf[['pubs_NOT_for_probe_analysis']][['input']][[1]])
+### Prepare data for probe analysis, and not for probe analysis
+
+id_platf$pubs_for_probe_analysis$highest_hit_analysis <- master_annotator(
+  descriptions_df = id_platf$desc, 
+  des_paper_id_col = opts$ann$des_exp_id_col, 
+  des_species_col = opts$ann$des_species_col, 
+  input_df = id_platf$pubs_for_probe_analysis$input, 
+  input_exp_id_col = opts$ann$input_exp_id_col, 
+  input_id_col = 'Probe',
+  PERFORM_B_get_the_highest_hit_returning_id_type = T,
+  B_highest_hit_int_Probe_IDs_to_test = 50)
+
+
+
+data_prepared_for_annotation <- list(
+  'data_for_probe_annotation' = id_platf$pubs_for_probe_analysis$input,
+  'platform_ids_for_probe_annotation' = id_platf$pubs_for_probe_analysis$highest_hit_analysis$ids_to_be_used_for_annotation,
+  'data_NOT_for_probe_annotation' = id_platf$pubs_NOT_for_probe_analysis$input,
+  'descriptions' = id_platf$desc
+)
+
+save(data_prepared_for_annotation, file = 'data_prepared_for_annotation')
+##############################################
+### IDENTIFY PLATFORM FOR PROBE ANNOTATION ###
+##############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### Prepare working list ###

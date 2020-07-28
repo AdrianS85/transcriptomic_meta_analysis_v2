@@ -1,56 +1,8 @@
 # rm(list = ls(pattern = 'temp.*|test.*'))
-source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
-source('functions_pre_preparation.R')
 source('opts.R')
 library(loggit)
 
-opts_pre_prep <- list()
-pre_prep_reform <- list()
-dir.create(opts$pre_prep_reform$folder)
 set_logfile(paste0(opts$pre_prep_reform$folder, "/loggit.log"))
-
-
-###################
-### SET OPTIONS ###
-###################
-opts_pre_prep <- list(
-  'GPL6885' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^28.*tsv|^68.*tsv')),
-  'GPL6887' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^33.*tsv|^72.*tsv')),
-  'GPL17223' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^36.*tsv')),
-  'GPL1261' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^66.*tsv|^70.*tsv|^77.*tsv|^78.*tsv')),
-  'GPL6246' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^67.*tsv')),
-  'GPL5425' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^71.*tsv')),
-  'GPL25480' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^76.*tsv')),
-  'GPL10427' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^45.*tsv|^60.*tsv')),
-  'GPL8160' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^34.*tsv')),
-  'GPL16570' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^56.*tsv|^50.*tsv')),
-  'GPL13912' = list('file_names'  = list.files(path = opts$dir_r_downloaded_data, pattern = '^52.*tsv')),
-  'which_platform_to_get_pap_and_exp_nb_for_regex' = '^GPL.*',
-  'exp_names_extraction_regex' = '^[[0-9]]{1,3}',
-  'comp_names_extraction_regex' = '^[[0-9]]{1,3}_[[0-9]]{1,3}',
-  'exp_comp_divider_symbol' = '_',
-  'manual' = list('input' = openxlsx::read.xlsx(xlsxFile = 'Antidepressants_metadata_140520.xlsx', sheet = 'data')[1:25])
-  )
-
-opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']] <- names(opts_pre_prep[stringr::str_detect(string = names(opts_pre_prep), pattern = opts_pre_prep[['which_platform_to_get_pap_and_exp_nb_for_regex']])])
-
-
-
-for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']]) 
-{
-  opts_pre_prep[[platform]][['exp_names']] <- stringr::str_extract(
-    string = opts_pre_prep[[platform]][['file_names']], 
-    pattern = opts_pre_prep[['exp_names_extraction_regex']])
-  
-  opts_pre_prep[[platform]][['comp_names']] <- stringr::str_remove(
-    string = stringr::str_extract(
-      string = opts_pre_prep[[platform]][['file_names']],
-      pattern = opts_pre_prep[['comp_names_extraction_regex']]),
-    pattern = paste0('.*', opts_pre_prep[['exp_comp_divider_symbol']]))
-}
-###################
-### SET OPTIONS ###
-###################
 
 
 
@@ -59,8 +11,10 @@ for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']])
 ######################
 ### LOAD PRE-INPUT ###
 ######################
+pre_prep_reform <- list()
+
 pre_prep_reform <- purrr::map(
-  .x = opts_pre_prep[names(opts_pre_prep) %in% opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']]], 
+  .x = opts$pre_prep_reform[names(opts$pre_prep_reform) %in% opts$pre_prep_reform[['platform_to_get_exp_and_comp_nb_for']]], 
   .f = function(platform){
     list('pre-input' = read_files_and_add_pubExp(
       opts_pre_prep_ = platform, 
@@ -77,24 +31,7 @@ pre_prep_reform <- purrr::map(
 
 
 
-#####################################################
-### Platform-specific steps before input creation ###
-#####################################################
-### GPL6885 - 28, 68 ###
-for (nb in seq_along(pre_prep_reform[['GPL6885']][['pre-input']])) { 
-  pre_prep_reform[['GPL6885']][['pre-input']][[nb]][['Nucleotide.Title']] <- NULL }
-### GPL6885 - 28, 68 ###
 
-
-### GPL1261 - 66, 70, 77, 78 ###
-# for (nb in seq_along(pre_prep_reform[['GPL1261']][['pre-input']])) { 
-#   pre_prep_reform[['GPL1261']][['pre-input']][[nb]][['UniGene.title']] <- NULL }
-
-pre_prep_reform[['GPL1261']][['pre-input']][[6]] <- tibble::add_column(.data = pre_prep_reform[['GPL1261']][['pre-input']][[6]], 'GenBank.Accession' = NA, .after = 'GI')
-### GPL1261 - 66, 70, 77, 78 ###
-#####################################################
-### Platform-specific steps before input creation ###
-#####################################################
 
 
 
@@ -103,8 +40,8 @@ pre_prep_reform[['GPL1261']][['pre-input']][[6]] <- tibble::add_column(.data = p
 #####################
 ### PREPARE INPUT ###
 #####################
-opts_pre_prep[['pass_nb']] <- 0
-for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']]) {
+opts$pre_prep_reform[['pass_nb']] <- 0
+for (platform in opts$pre_prep_reform[['platform_to_get_exp_and_comp_nb_for']]) {
   message(sprintf('processing platform %s...', platform))
   
   message('binding pre-input into single df...')
@@ -120,29 +57,27 @@ for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']]) {
 
   
   message('setting output df to be appended with reformated identifers...')
-  
-  if (opts_pre_prep[['pass_nb']] == 0) { message('NOTE!!! Need to set -temp_output-, cause set_search_bys function builds its own -output- df from input, which in case of data downloaded from GEO via R is not compatible with further functions. Lol. Poor software engineering again.') }
-  
-  pre_prep_reform[[platform]][['temp_output']] <- set_df_for_append(
+
+  pre_prep_reform[[platform]][['output']] <- set_df_for_append(
     check_cols_ = opts$check_cols_for_input, 
-    length = length(pre_prep_reform[[platform]][['input']][[1]]))
+    length = length(pre_prep_reform[[platform]][['input']][[1]])) ### !!! Here all columns are returned as character columns!
   
   
   
   message('copying standard columns returned by geo2r into output df...')
   
-  if (opts_pre_prep[['pass_nb']] == 0) { 
+  if (opts$pre_prep_reform[['pass_nb']] == 0) { 
     message(sprintf('NOTE!!! columns copied are: %s', copy_out_of_box_ready_columns_into_final_output_wrapper(check_cols_ = opts[['check_cols_for_input']], return_copied_col_names = T))) 
   }
   
-  pre_prep_reform[[platform]][['temp_output']] <- copy_out_of_box_ready_columns_into_final_output_wrapper(
+  pre_prep_reform[[platform]][['output']] <- copy_out_of_box_ready_columns_into_final_output_wrapper(
     check_cols_ = opts$check_cols_for_input, 
-    final_output_ = pre_prep_reform[[platform]][['temp_output']], 
+    final_output_ = pre_prep_reform[[platform]][['output']], 
     input_ = pre_prep_reform[[platform]][['input']])
   
   
   
-  opts_pre_prep[['pass_nb']] <- opts_pre_prep[['pass_nb']] + 1
+  opts$pre_prep_reform[['pass_nb']] <- opts$pre_prep_reform[['pass_nb']] + 1
   message(sprintf('platform %s processed.', platform))
 }
 #####################
@@ -153,113 +88,173 @@ for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']]) {
 
 
 
+
 ############################################
 ### Platform-specific column reformating ###
 ############################################
-### GPL6885 - 28, 68 ###
-pre_prep_reform$GPL6885$temp_output$Probe <- pre_prep_reform$GPL6885$input$ID # - OK
-pre_prep_reform$GPL6885$temp_output$Description <- pre_prep_reform$GPL6885$input$`Gene.title` # - OK
-pre_prep_reform$GPL6885$temp_output$Gene_ID <- pre_prep_reform$GPL6885$input$`Gene.ID` # - OK
-pre_prep_reform$GPL6885$temp_output$Unigene <- pre_prep_reform$GPL6885$input$`UniGene.ID` # - OK
-pre_prep_reform$GPL6885$temp_output$Nucleotide <- pre_prep_reform$GPL6885$input$GI # - OK
+### GPL1261 - 66, 70, 77, 78 ###
+pre_prep_reform$GPL1261$output$Probe <- pre_prep_reform$GPL1261$input$ID
+pre_prep_reform$GPL1261$output$Description <- pre_prep_reform$GPL1261$input$`Gene.title`
+pre_prep_reform$GPL1261$output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL1261$input$`Gene.ID`, pattern = '///', replacement = ', ')
+pre_prep_reform$GPL1261$output$Unigene <- pre_prep_reform$GPL1261$input$`UniGene.ID`
+pre_prep_reform$GPL1261$output$Nucleotide <- pre_prep_reform$GPL1261$input$GI
+### GPL1261 - 66, 70, 77, 78 ###
 
-pre_prep_reform$GPL6885$input$bind_for_extraction <- paste(pre_prep_reform$GPL6885$input$`Gene.symbol`, pre_prep_reform$GPL6885$input$`UniGene.symbol`, pre_prep_reform$GPL6885$input$`GenBank.Accession`, sep = '___') # - OK
+### GPL5425 - 71 ###
+pre_prep_reform$GPL5425$output$Description <- pre_prep_reform$GPL5425$input$`Gene.title`
+pre_prep_reform$GPL5425$output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL5425$input$`Gene.ID`, pattern = '///', replacement = ', ')
+pre_prep_reform$GPL5425$output$Unigene <- pre_prep_reform$GPL5425$input$`UniGene.ID`
+pre_prep_reform$GPL5425$output$Nucleotide <- pre_prep_reform$GPL5425$input$GI
+### GPL5425 - 71 ###
+
+### GPL6246 - 67 ###
+pre_prep_reform$GPL6246$output$Probe <- pre_prep_reform$GPL6246$input$ID
+pre_prep_reform$GPL6246$output$Description <- pre_prep_reform$GPL6246$input$`Gene.title`
+pre_prep_reform$GPL6246$output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`Gene.ID`, pattern = '///', replacement = ', ')
+pre_prep_reform$GPL6246$output$Unigene <- stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`UniGene.ID`, pattern = '///', replacement = ', ')
+pre_prep_reform$GPL6246$output$Nucleotide <- stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$GI, pattern = '///', replacement = ', ')
+### GPL6246 - 67 ###
+
+### GPL6885 - 28, 68 ###
+pre_prep_reform$GPL6885$output$Probe <- pre_prep_reform$GPL6885$input$ID
+pre_prep_reform$GPL6885$output$Description <- pre_prep_reform$GPL6885$input$`Gene.title`
+pre_prep_reform$GPL6885$output$Gene_ID <- pre_prep_reform$GPL6885$input$`Gene.ID`
+pre_prep_reform$GPL6885$output$Unigene <- pre_prep_reform$GPL6885$input$`UniGene.ID`
+pre_prep_reform$GPL6885$output$Nucleotide <- pre_prep_reform$GPL6885$input$GI
 ### GPL6885 - 28, 68 ###
 
 ### GPL6887 - 33, 72 ###
-pre_prep_reform$GPL6887$temp_output$Probe <- pre_prep_reform$GPL6887$input$ID # - OK
-pre_prep_reform$GPL6887$temp_output$Description <- pre_prep_reform$GPL6887$input$`Gene.title` # - OK
-pre_prep_reform$GPL6887$temp_output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL6887$input$`Gene.ID`, pattern = '///', replacement = ', ') # - OK
-pre_prep_reform$GPL6887$temp_output$Unigene <- pre_prep_reform$GPL6887$input$`UniGene.ID` # - OK
-pre_prep_reform$GPL6887$temp_output$Nucleotide <- pre_prep_reform$GPL6887$input$GI # - OK
-
-pre_prep_reform$GPL6887$input$bind_for_extraction <- paste(stringr::str_replace_all(string = pre_prep_reform$GPL6887$input$`Gene.symbol`, pattern = '///', replacement = '___'), pre_prep_reform$GPL6887$input$`UniGene.symbol`, pre_prep_reform$GPL6887$input$`GenBank.Accession`, sep = '___') # - OK
+pre_prep_reform$GPL6887$output$Probe <- pre_prep_reform$GPL6887$input$ID
+pre_prep_reform$GPL6887$output$Description <- pre_prep_reform$GPL6887$input$`Gene.title`
+pre_prep_reform$GPL6887$output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL6887$input$`Gene.ID`, pattern = '///', replacement = ', ')
+pre_prep_reform$GPL6887$output$Unigene <- pre_prep_reform$GPL6887$input$`UniGene.ID`
+pre_prep_reform$GPL6887$output$Nucleotide <- pre_prep_reform$GPL6887$input$GI
 ### GPL6887 - 33, 72 ###
 
-### GPL17223 - 36 ###
-pre_prep_reform$GPL17223$temp_output$Probe <- pre_prep_reform$GPL17223$input$ProbeId # - OK
-pre_prep_reform$GPL17223$temp_output$Nucleotide <- pre_prep_reform$GPL17223$input$Gid # - OK
-pre_prep_reform$GPL17223$temp_output$Description <- pre_prep_reform$GPL17223$input$Definition # - OK
-
-pre_prep_reform$GPL17223$input$bind_for_extraction <- paste(pre_prep_reform$GPL17223$input$Symbol, pre_prep_reform$GPL17223$input$Transcript, pre_prep_reform$GPL17223$input$GB_ACC, sep = '___') # - OK
-### GPL17223 - 36 ###
-
-### GPL1261 - 66, 70, 77, 78 ###
-pre_prep_reform$GPL1261$temp_output$Probe <- pre_prep_reform$GPL1261$input$ID # - OK
-pre_prep_reform$GPL1261$temp_output$Description <- pre_prep_reform$GPL1261$input$`Gene.title` # - OK
-pre_prep_reform$GPL1261$temp_output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL1261$input$`Gene.ID`, pattern = '///', replacement = ', ') # - OK
-pre_prep_reform$GPL1261$temp_output$Unigene <- pre_prep_reform$GPL1261$input$`UniGene.ID` # - OK
-pre_prep_reform$GPL1261$temp_output$Nucleotide <- pre_prep_reform$GPL1261$input$GI # - OK
-
-pre_prep_reform$GPL1261$input$bind_for_extraction <- paste(stringr::str_replace_all(string = pre_prep_reform$GPL1261$input$`Gene.symbol`, pattern = '///', replacement = '___'), pre_prep_reform$GPL1261$input$`UniGene.symbol`, pre_prep_reform$GPL1261$input$`GenBank.Accession`, sep = '___') # - OK
-### GPL1261 - 66, 70, 77, 78 ###
-
-### GPL6246 - 67 ###
-pre_prep_reform$GPL6246$temp_output$Probe <- pre_prep_reform$GPL6246$input$ID # - OK
-pre_prep_reform$GPL6246$temp_output$Description <- pre_prep_reform$GPL6246$input$`Gene.title` # - OK
-pre_prep_reform$GPL6246$temp_output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`Gene.ID`, pattern = '///', replacement = ', ') # - OK
-pre_prep_reform$GPL6246$temp_output$Unigene <- stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`UniGene.ID`, pattern = '///', replacement = ', ') # - OK
-pre_prep_reform$GPL6246$temp_output$Nucleotide <- stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$GI, pattern = '///', replacement = ', ') # - OK
-
-pre_prep_reform$GPL6246$input$bind_for_extraction <- paste(stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`Gene.symbol`, pattern = '///', replacement = '___'), stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`UniGene.symbol`, pattern = '///', replacement = '___'), stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`GenBank.Accession`, pattern = '///', replacement = '___'), sep = '___') # - OK
-### GPL6246 - 67 ###
-
-### GPL5425 - 71 ###
-pre_prep_reform$GPL5425$temp_output$Description <- pre_prep_reform$GPL5425$input$`Gene.title` # - OK
-pre_prep_reform$GPL5425$temp_output$Gene_ID <- stringr::str_replace_all(string = pre_prep_reform$GPL5425$input$`Gene.ID`, pattern = '///', replacement = ', ') # - OK
-pre_prep_reform$GPL5425$temp_output$Unigene <- pre_prep_reform$GPL5425$input$`UniGene.ID` # - OK
-pre_prep_reform$GPL5425$temp_output$Nucleotide <- pre_prep_reform$GPL5425$input$GI # - OK
-
-pre_prep_reform$GPL5425$input$bind_for_extraction <- paste(stringr::str_remove(string = pre_prep_reform$GPL5425$input$ID, pattern = '_P.*'), stringr::str_replace_all(string = pre_prep_reform$GPL5425$input$`Gene.symbol`, pattern = '///', replacement = '___'), pre_prep_reform$GPL5425$input$`GenBank.Accession`, pre_prep_reform$GPL5425$input$`UniGene.symbol`, sep = '___')
-### GPL5425 - 71 ###
-
-### GPL25480 - 76 ###
-pre_prep_reform$GPL25480$temp_output$Probe <- pre_prep_reform$GPL25480$input$SPOT_ID # - OK
-### GPL25480 - 76 ###
+### GPL8160 - 34 ###
+pre_prep_reform$GPL8160$output$Probe <- pre_prep_reform$GPL8160$input$ID
+### GPL8160 - 34 ###
 
 ### GPL10427 - 60, 45 ###
-pre_prep_reform$GPL10427$temp_output$Probe <- pre_prep_reform$GPL10427$input$ProbeName # 
-pre_prep_reform$GPL10427$temp_output$Description <- pre_prep_reform$GPL10427$input$Description #
+pre_prep_reform$GPL10427$output$Probe <- pre_prep_reform$GPL10427$input$ProbeName
+pre_prep_reform$GPL10427$output$Description <- pre_prep_reform$GPL10427$input$Description
+### GPL10427 - 60, 45 ###
 
+### GPL13912 - 52 ###
+pre_prep_reform$GPL13912$output$Description <- pre_prep_reform$GPL13912$input$GENE_NAME
+pre_prep_reform$GPL13912$output$Probe <- pre_prep_reform$GPL13912$input$NAME
+pre_prep_reform$GPL13912$output$Gene_ID <- pre_prep_reform$GPL13912$input$GENE_ID
+pre_prep_reform$GPL13912$output$Unigene <- pre_prep_reform$GPL13912$input$UNIGENE_ID
+### GPL13912 - 52 ###
+
+### GPL16570 - 56, 50 ###
+pre_prep_reform$GPL16570$output$Probe <- pre_prep_reform$GPL16570$input$probeset_id
+### GPL16570 - 56, 50 ###
+
+### GPL17223 - 36 ###
+pre_prep_reform$GPL17223$output$Probe <- pre_prep_reform$GPL17223$input$ProbeId
+pre_prep_reform$GPL17223$output$Nucleotide <- pre_prep_reform$GPL17223$input$Gid
+pre_prep_reform$GPL17223$output$Description <- pre_prep_reform$GPL17223$input$Definition
+### GPL17223 - 36 ###
+
+### GPL25480 - 76 ###
+pre_prep_reform$GPL25480$output$Probe <- pre_prep_reform$GPL25480$input$SPOT_ID
+### GPL25480 - 76 ###
+############################################
+### Platform-specific column reformating ###
+############################################
+
+
+
+
+
+
+
+  
+
+
+
+
+
+################################################################################
+### Prepare specific, composite bind_for_extraction column for each platform ###
+################################################################################
+### GPL1261 - 66, 70, 77, 78 ###
+pre_prep_reform$GPL1261$input$bind_for_extraction <- paste(
+  stringr::str_replace_all(string = pre_prep_reform$GPL1261$input$`Gene.symbol`, pattern = '///', replacement = opts$pre_prep_reform$bind_sep), 
+  pre_prep_reform$GPL1261$input$`UniGene.symbol`, 
+  pre_prep_reform$GPL1261$input$`GenBank.Accession`, 
+  sep = opts$pre_prep_reform$bind_sep) 
+
+### GPL5425 - 71 ###
+pre_prep_reform$GPL5425$input$bind_for_extraction <- paste(
+  stringr::str_remove(string = pre_prep_reform$GPL5425$input$ID, pattern = '_P.*'), 
+  stringr::str_replace_all(string = pre_prep_reform$GPL5425$input$`Gene.symbol`, pattern = '///', replacement = opts$pre_prep_reform$bind_sep), 
+  pre_prep_reform$GPL5425$input$`GenBank.Accession`, 
+  pre_prep_reform$GPL5425$input$`UniGene.symbol`, 
+  sep = opts$pre_prep_reform$bind_sep)
+
+### GPL6246 - 67 ###
+pre_prep_reform$GPL6246$input$bind_for_extraction <- paste(
+  stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`Gene.symbol`, pattern = '///', replacement = opts$pre_prep_reform$bind_sep), 
+  stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`UniGene.symbol`, pattern = '///', replacement = opts$pre_prep_reform$bind_sep), 
+  stringr::str_replace_all(string = pre_prep_reform$GPL6246$input$`GenBank.Accession`, pattern = '///', replacement = opts$pre_prep_reform$bind_sep), 
+  sep = opts$pre_prep_reform$bind_sep)
+
+### GPL6885 - 28, 68 ###
+pre_prep_reform$GPL6885$input$bind_for_extraction <- paste(
+  pre_prep_reform$GPL6885$input$`Gene.symbol`, 
+  pre_prep_reform$GPL6885$input$`UniGene.symbol`, 
+  pre_prep_reform$GPL6885$input$`GenBank.Accession`, 
+  sep = opts$pre_prep_reform$bind_sep)
+
+### GPL6887 - 33, 72 ###
+pre_prep_reform$GPL6887$input$bind_for_extraction <- paste(
+  stringr::str_replace_all(string = pre_prep_reform$GPL6887$input$`Gene.symbol`, pattern = '///', replacement = opts$pre_prep_reform$bind_sep), 
+  pre_prep_reform$GPL6887$input$`UniGene.symbol`, 
+  pre_prep_reform$GPL6887$input$`GenBank.Accession`, 
+  sep = opts$pre_prep_reform$bind_sep)
+
+### GPL8160 - 34 ###
+pre_prep_reform$GPL8160$input$bind_for_extraction <- pre_prep_reform$GPL8160$input$GB_ACC # 
+
+### GPL10427 - 60, 45
 pre_prep_reform$GPL10427$input$bind_for_extraction <- paste(
   prepare_uncorrupted_GPL10427_accessions_wrapper(GPL10427_accessions = pre_prep_reform$GPL10427$input$accessions), 
   pre_prep_reform$GPL10427$input$GeneName, 
   pre_prep_reform$GPL10427$input$SystematicName, 
-  stringr::str_replace_all(string = pre_prep_reform$GPL10427$input$GB_LIST, pattern = ', ', replacement = '___'),
-  sep = '___') # - OK
-### GPL10427 - 60, 45 ###
+  stringr::str_replace_all(string = pre_prep_reform$GPL10427$input$GB_LIST, pattern = ', ', replacement = opts$pre_prep_reform$bind_sep),
+  sep = opts$pre_prep_reform$bind_sep)
 
-### GPL8160 - 34 ###
-pre_prep_reform$GPL8160$temp_output$Probe <- pre_prep_reform$GPL8160$input$ID # 
-
-pre_prep_reform$GPL8160$input$bind_for_extraction <- pre_prep_reform$GPL8160$input$GB_ACC # 
-### GPL8160 - 34 ###
-
-### GPL16570 - 56, 50 ###
-pre_prep_reform$GPL16570$temp_output$Probe <- pre_prep_reform$GPL16570$input$probeset_id #
-
-pre_prep_reform$GPL16570$input$bind_for_extraction <- paste(
-  prepare_noncorrupted_GPL16570_cols(GPL16570_cols = pre_prep_reform$GPL16570$input$gene_assignment),
-  sep = '___')
-### GPL16570 - 56, 50 ###
-
-### GPL13912 - 52 ###
-pre_prep_reform$GPL13912$temp_output$Description <- pre_prep_reform$GPL13912$input$GENE_NAME # 
-pre_prep_reform$GPL13912$temp_output$Probe <- pre_prep_reform$GPL13912$input$NAME # 
-pre_prep_reform$GPL13912$temp_output$Gene_ID <- pre_prep_reform$GPL13912$input$GENE_ID
-pre_prep_reform$GPL13912$temp_output$Symbol <- pre_prep_reform$GPL13912$input$GENE_SYMBOL
-pre_prep_reform$GPL13912$temp_output$Unigene <- pre_prep_reform$GPL13912$input$UNIGENE_ID
-pre_prep_reform$GPL13912$temp_output$ENST_ <- pre_prep_reform$GPL13912$input$ENSEMBL_ID
-
+### GPL13912 - 52 ### ### !!! REMOVING 'NAP012158-001' NAMES, A_55_P2114333 ### !!!
 pre_prep_reform$GPL13912$input$bind_for_extraction <- paste(
   GPL13912_cols = pre_prep_reform$GPL13912$input$GB_ACC,
   pre_prep_reform$GPL13912$input$GENE_SYMBOL,
+  pre_prep_reform$GPL13912$input$ENSEMBL_ID,
   prepare_uncorrupted_GPL13912_ACCESSION_STRING_wrapper(pre_prep_reform$GPL13912$input$ACCESSION_STRING),
-  sep = '___')
-### GPL13912 - 52 ###
-############################################
-### Platform-specific column reformating ###
-############################################
+  sep = opts$pre_prep_reform$bind_sep)
+
+### GPL16570 - 56, 50 ###
+pre_prep_reform$GPL16570$input$bind_for_extraction <- paste(
+  prepare_noncorrupted_GPL16570_cols(GPL16570_cols = pre_prep_reform$GPL16570$input$gene_assignment),
+  sep = opts$pre_prep_reform$bind_sep)
+
+### GPL17223 - 36 
+pre_prep_reform$GPL17223$input$bind_for_extraction <- paste(
+  pre_prep_reform$GPL17223$input$Symbol, 
+  pre_prep_reform$GPL17223$input$Transcript, 
+  pre_prep_reform$GPL17223$input$GB_ACC, 
+  sep = opts$pre_prep_reform$bind_sep)
+
+### GPL25480 - 76 ###
+pre_prep_reform$GPL25480$input$bind_for_extraction <- NULL
+################################################################################
+### Prepare specific, composite bind_for_extraction column for each platform ###
+################################################################################
+
+
+
+
 
 
 
@@ -268,7 +263,7 @@ pre_prep_reform$GPL13912$input$bind_for_extraction <- paste(
 ####################################################
 ### PREPARE FOR EXTRACTION FROM COMPOSITE COLUMN ###
 ####################################################
-for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']]) 
+for (platform in opts$pre_prep_reform[['platform_to_get_exp_and_comp_nb_for']])
 {
   message(sprintf('processing platform %s...', platform))
   
@@ -281,26 +276,14 @@ for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']])
     
     
     message('separating identifiers from single column...')
-    pre_prep_reform[[platform]][['sep_all_identifiers']] <- get_sep_all_identifiers(
-      input_df_name = pre_prep_reform[[platform]][['input']], 
-      bad_cols_to_process_seq = seq(col_with_ids_for_extraction,col_with_ids_for_extraction), 
-      GPL_ID = 'R')
-    
-    
-    
-    message('merging...')
-    pre_prep_reform[[platform]] <- rlist::list.merge(
-      pre_prep_reform[[platform]], 
-      set_search_bys(
-        input_df_ = pre_prep_reform[[platform]][['input']], 
-        search_by_p1_ = "stringr::str_detect(string = ", 
-        search_by_n_ = 'identifer', 
-        check_cols_ = opts$check_cols_for_input))
+
+    pre_prep_reform[[platform]][['sep_all_identifiers']] <- as.data.frame(
+      stringr::str_split_fixed(
+        string = pre_prep_reform[[platform]][['input']][[col_with_ids_for_extraction]],
+        pattern = opts$pre_prep_reform$bind_sep,
+        n = Inf))
   }
-  
-  message('copying temporary output to output...')
-  pre_prep_reform[[platform]][['output']] <- pre_prep_reform[[platform]][['temp_output']]
-  
+
   message(sprintf('platform %s processed', platform))
 }
 ####################################################
@@ -310,21 +293,20 @@ for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']])
 
 
 
-
 #########################################
 ### EXTRACT IDS FROM COMPOSITE COLUMN ###
 #########################################
-for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']]) 
+for (platform in opts$pre_prep_reform[['platform_to_get_exp_and_comp_nb_for']]) 
 {
   if (!is.null(pre_prep_reform[[platform]][['input']][['bind_for_extraction']])) {
     
-    pre_prep_reform[[platform]]output <- extract_identifers(
+    pre_prep_reform[[platform]][['output']] <- extract_identifers(
       sep_all_identifiers_ = pre_prep_reform[[platform]][['sep_all_identifiers']], 
-      search_by_ = pre_prep_reform[[platform]][['search_by']], 
+      search_by = opts$pre_prep_reform[['search_bys']][['search_by']], 
       output_ = pre_prep_reform[[platform]][['output']], 
-      opts_pre_check_cols = opts[['check_cols_for_input']], 
+      opts_pre_check_cols = opts[['check_cols_for_input']],
       range_of_cols_with_IDs_start = opts[['pre_prep_reform']][['range_of_cols_with_IDs_in_output_start']], 
-      range_of_cols_with_IDs_end = opts[['pre_prep_reform']][['range_of_cols_with_IDs_in_output_end']])
+      range_of_cols_with_IDs_end = opts[['pre_prep_reform']][['range_of_cols_with_IDs_in_output_end']]) ### !!! does unigene search_by really identifies Mms?
     
     
     
@@ -336,7 +318,7 @@ for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']])
     message(sprintf('writing data to %s', opts$dir_r_downloaded_data))
     write.table(
       x = pre_prep_reform[[platform]][['output']], 
-      file = paste0(opts$dir_r_downloaded_data, '/', platform,  '_prepared.tsv'), 
+      file = paste0(opts$pre_prep_reform$folder, '/', platform,  '_prepared.tsv'), 
       sep = '\t', 
       row.names = F, 
       dec = ',')
@@ -353,45 +335,79 @@ for (platform in opts_pre_prep[['platform_to_get_pap_and_exp_nb_for']])
 
 
 
-
-
 ################################################
 ### MANUAL - 3 5 7 8 12 14 15 18 26 58 38 30 ### 
 #### 19 27 16 41 46 11 20 80 81 83 82 17 42 ####
 ################################################
-colnames(manual$input) <- as.character(opts$check_cols_for_input)
+pre_prep_reform[['manual']][['input']] <- openxlsx::read.xlsx(xlsxFile = 'Antidepressants_metadata_140520.xlsx', sheet = 'data')[1:25]
 
-manual$input[opts$pre_prep_reform$range_of_cols_with_IDs_in_output_start:opts$pre_prep_reform$range_of_cols_with_IDs_in_output_end] <- purrr::map_dfc(.x = manual$input[opts$pre_prep_reform$range_of_cols_with_IDs_in_output_start:opts$pre_prep_reform$range_of_cols_with_IDs_in_output_end], .f = as.character)
 
-manual$input$Symbol[manual$input$Symbol == 'Ggh ‡'] <- 'Ggh'
+pre_prep_reform[['manual']][['input']] <- verify_df(
+  df_ = pre_prep_reform[['manual']][['input']],
+  repeated_spaces_ = T,
+  trailing_spaces_ = T, 
+  character_NAs_ = T,
+  change_to_lower_ = F, 
+  to_ascii_ = F)[['df']] # This helps with errors during further manual df processing
 
-manual$input_QA_checklist <- get_input_QA_checklist(input_table_ = manual$input, Pub._col_ = 'Pub.')
 
-manual$input$NM_ <- prepare_noncorrupted_NXMR_col(nxmr_col_ = manual$input$NM_)
-manual$input$XM_ <- prepare_noncorrupted_NXMR_col(nxmr_col_ = manual$input$XM_)
-manual$input$Accession <- stringr::str_remove(string = manual$input$Accession, pattern = ' $')
-manual$input$Symbol <- stringr::str_replace_all(string = prepare_noncorrupted_symbol_col(symbol_col_ = manual$input$Symbol), pattern = ', ', replacement = '___')
+colnames(pre_prep_reform[['manual']][['input']]) == as.character(opts$check_cols_for_input)
 
-manual$temp_output <- manual$input
 
-manual$sep_all_identifiers <- get_sep_all_identifiers(input_df_name = manual$input, bad_cols_to_process_seq = seq(10,10), GPL_ID = 'R')
+colnames(pre_prep_reform[['manual']][['input']]) <- as.character(opts$check_cols_for_input)
 
-manual <- rlist::list.merge(manual, set_search_bys(input_df_ = manual$input, search_by_p1_ = "stringr::str_detect(string = ", search_by_n_ = 'identifer', check_cols_ = opts$check_cols_for_input))
 
-manual$output <- manual$temp_output
+pre_prep_reform[['manual']][['input']][opts$pre_prep_reform$range_of_cols_with_IDs_in_output_start:opts$pre_prep_reform$range_of_cols_with_IDs_in_output_end] <- purrr::map_dfc(
+  .x = pre_prep_reform[['manual']][['input']][opts$pre_prep_reform$range_of_cols_with_IDs_in_output_start:opts$pre_prep_reform$range_of_cols_with_IDs_in_output_end], 
+  .f = as.character)
 
-manual$output <- extract_identifers(sep_all_identifiers_ = manual$sep_all_identifiers, search_by_ = manual$search_by, output_ = manual$output, opts_pre_check_cols = opts$check_cols_for_input, range_of_cols_with_IDs_start = opts$pre_prep_reform$range_of_cols_with_IDs_in_output_start, range_of_cols_with_IDs_end = opts$pre_prep_reform$range_of_cols_with_IDs_in_output_end)
+pre_prep_reform[['manual']][['input']][['Exp.']] <- as.character(pre_prep_reform[['manual']][['input']][['Exp.']])
 
-manual$output_cols_check <- verify_df(df_ = manual$output, only_qa = T)
+pre_prep_reform[['manual']][['input']][['Comp']] <- as.character(pre_prep_reform[['manual']][['input']][['Comp']])
+
+pre_prep_reform[['manual']][['input']][['ID']] <- as.character(pre_prep_reform[['manual']][['input']][['ID']])
+
+# pre_prep_reform[['manual']][['input']]$Symbol[pre_prep_reform[['manual']][['input']]$Symbol == 'Ggh ‡'] <- 'Ggh'
+
+pre_prep_reform[['manual']][['input']][['Symbol']] <- stringr::str_replace_all(
+  string = prepare_noncorrupted_symbol_col(symbol_col_ = pre_prep_reform[['manual']][['input']][['Symbol']]), 
+  pattern = ', ', 
+  replacement = opts$pre_prep_reform$bind_sep)
+
+pre_prep_reform[['manual']][['input_QA_checklist']] <- verify_df(
+  df_ = pre_prep_reform[['manual']][['input']], 
+  only_qa = T)
+
+pre_prep_reform[['manual']][['output']] <- pre_prep_reform[['manual']][['input']]
+
+
+pre_prep_reform[['manual']][['sep_all_identifiers']] <- as.data.frame(
+  stringr::str_split_fixed(
+    string = pre_prep_reform[['manual']][['input']][['Symbol']], ### !!! change this into colname
+    pattern = opts$pre_prep_reform$bind_sep,
+    n = Inf))
+
+pre_prep_reform[['manual']][['output']][['Symbol']] <- NA
+pre_prep_reform[['manual']][['output']][['Symbol']] <- as.character(pre_prep_reform[['manual']][['output']][['Symbol']])
+
+pre_prep_reform[['manual']][['output']] <- extract_identifers(
+  sep_all_identifiers_ = pre_prep_reform[['manual']][['sep_all_identifiers']], 
+  search_by = opts$pre_prep_reform[['search_bys']][['search_by']], 
+  output_ = pre_prep_reform[['manual']][['output']], 
+  opts_pre_check_cols = opts[['check_cols_for_input']], 
+  range_of_cols_with_IDs_start = opts[['pre_prep_reform']][['range_of_cols_with_IDs_in_output_start']], 
+  range_of_cols_with_IDs_end = opts[['pre_prep_reform']][['range_of_cols_with_IDs_in_output_end']])
+
+
+pre_prep_reform[['manual']][['output_QA_checklist']] <- verify_df(df_ = pre_prep_reform[['manual']][['output']], only_qa = T)
+
 
 write.table(
-  x = manual$output, 
-  file = paste0(opts$dir_r_downloaded_data, '/manual_prepared.tsv'), 
+  x = pre_prep_reform[['manual']][['output']], 
+  file = paste0(opts$pre_prep_reform$folder, '/manual_prepared.tsv'),
   sep = '\t', 
   row.names = F, 
   dec = ',')
-
-
 ################################################
 ### MANUAL - 3 5 7 8 12 14 15 18 26 58 38 30 ### 
 #### 19 27 16 41 46 11 20 80 81 83 82 17 42 ####
@@ -400,8 +416,94 @@ write.table(
 
 
 
+
+
+
+
+
+
+############
+### TEST ###
+############
+pre_prep_reform[['check_i/o']] <- purrr::map2(
+  .x = pre_prep_reform, 
+  .y = names(pre_prep_reform), 
+  .f = function(platform, pl_names){
+    tryCatch({
+      compare_sample_rows_in_i_vs_o(
+        in_df = platform[['input']], 
+        out_df = platform[['output']], 
+        analysis_name = pl_names, 
+        write_to_folder = opts$pre_prep_reform$folder,
+        drop_o_cols = c("adj,P,Val", "P,Value", "t", "B", "Description", "Protein", "Unknown"))
+    }, error = function(cond) { return(NA) }
+    )})
+############
+### TEST ###
+############
+
+
+
+
+
+#########################
+### CONSTRUCT DATASET ###
+#########################
+pre_prep_reform$combined$data <- rlist::list.rbind(
+  .data = pre_prep_reform[names(pre_prep_reform) %in% c(opts$pre_prep_reform[['which_platform_to_get_exp_and_comp_nb_for_regex']], 'manual')])
+
+
+### !!! check can You bind data with non-compatible colnames
+test2 <- test
+colnames(test2)[[1]] <- 'ass'
+
+rlist::list.rbind(list(test, test))
+rlist::list.rbind(list(test, test2))
+### !!! check can You bind data with non-compatible colnames
+
+
+pre_prep_reform$combined$data <- verify_df(
+  df_ = pre_prep_reform$combined$data, 
+  sort_by_col = F, 
+  repeated_spaces_ = T, 
+  trailing_spaces_ = T, 
+  character_NAs_ = T, 
+  change_to_lower_ = F, 
+  to_ascii_ = F)
+
+pre_prep_reform$combined$qa <- verify_df(df_ = pre_prep_reform$combined$data, only_qa = T)
+
+#Remove columns without single value
+pre_prep_reform$combined$data[['NP_']] <- NULL
+pre_prep_reform$combined$data[['XP_']] <- NULL
+pre_prep_reform$combined$data[['Protein']] <- NULL
+pre_prep_reform$combined$data[['Unknown']] <- NULL
+
+
+# Checked - ID, Probe, NR_, Nucleotide, Unigene, ENSG_, ENST_, Gene_ID, Accession
+pre_prep_reform$combined$data[['NM_']] <- stringr::str_remove_all(string = pre_prep_reform$combined$data[['NM_']], pattern = '\\.[0-9]{1,}')
+pre_prep_reform$combined$data[['XM_']] <- stringr::str_remove_all(string = pre_prep_reform$combined$data[['XM_']], pattern = '\\.[0-9]{1,}')
+pre_prep_reform$combined$data[['XR_']] <- stringr::str_remove_all(string = pre_prep_reform$combined$data[['XR_']], pattern = '\\.[0-9]{1,}')
+
+pre_prep_reform$combined$data[['Symbol']] <- input_data_symbol_uncorruption_wrapper(manual_input_symbol = pre_prep_reform$combined$data[['Symbol']])
+
+pre_prep_reform$combined$data <- pre_prep_reform$combined$data[order(pre_prep_reform$combined$data_reformated[['Pub.']], pre_prep_reform$combined$data_[['Exp.']]),]
+
+pre_prep_reform$combined$qa_2 <- verify_df(df_ = pre_prep_reform$combined$data, only_qa = T)
+
+write.table(
+  x = pre_prep_reform$combined$data, 
+  file = 'input_data_for_analysis.tsv', 
+  sep = '\t', 
+  dec = ',', 
+  row.names = F)
+
+#########################
+### CONSTRUCT DATASET ###
+#########################
+
 save(pre_prep_reform, file = paste0(opts$pre_prep_reform$folder, '/pre_prep_reform'))
-save(opts_pre_prep, file = paste0(opts$pre_prep_reform$folder, '/opts_pre_prep'))
+save(opts$pre_prep_reform, file = paste0(opts$pre_prep_reform$folder, '/opts_pre_prep_reform'))
 
 
 ########################
@@ -587,3 +689,26 @@ save(opts_pre_prep, file = paste0(opts$pre_prep_reform$folder, '/opts_pre_prep')
 # get_all_symbols_in_chrvec(manual$input$ENSG_) # OK
 # get_all_symbols_in_chrvec(manual$input$XM_) # remove
 # get_all_symbols_in_chrvec(manual$input$XR_) # OK
+
+
+
+
+
+#####################################################
+### Platform-specific steps before input creation ###
+#####################################################
+### GPL6885 - 28, 68 ###
+# for (nb in seq_along(pre_prep_reform[['GPL6885']][['pre-input']])) { 
+#   pre_prep_reform[['GPL6885']][['pre-input']][[nb]][['Nucleotide.Title']] <- NULL }
+### GPL6885 - 28, 68 ###
+
+
+### GPL1261 - 66, 70, 77, 78 ###
+# for (nb in seq_along(pre_prep_reform[['GPL1261']][['pre-input']])) { 
+#   pre_prep_reform[['GPL1261']][['pre-input']][[nb]][['UniGene.title']] <- NULL }
+
+# pre_prep_reform[['GPL1261']][['pre-input']][[6]] <- tibble::add_column(.data = pre_prep_reform[['GPL1261']][['pre-input']][[6]], 'GenBank.Accession' = NA, .after = 'GI')
+### GPL1261 - 66, 70, 77, 78 ###
+#####################################################
+### Platform-specific steps before input creation ###
+#####################################################
