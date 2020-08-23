@@ -63,8 +63,7 @@ comparisons$actual_comparisons_list <- rlist::list.flatten(comparisons$actual_co
 
 
 
-general_opts <- list('dir' = 'geo/geo_r',
-                     'Pub.' = 76,
+general_opts <- list('Pub.' = 76,
                      'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","SPOT_ID"),
                      'p_cutoff' = 0.05,
                      'series' = "GSE119291",
@@ -84,7 +83,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_1 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_1, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_1, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 1 ###
 
 
@@ -100,7 +99,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_2 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_2, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 2 ###
 
 
@@ -116,7 +115,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_3 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_3, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_3, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 3 ###
 
 
@@ -131,7 +130,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_4 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_4, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_4, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 4 ###
 
 
@@ -147,7 +146,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_5 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_5, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_5, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 5 ###
 
 
@@ -161,7 +160,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_6 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_6, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_6, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 6 ###
 
 
@@ -177,7 +176,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_7 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_7, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_7, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 7 ###
 
 
@@ -192,7 +191,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_76_8 <- get_full_topTable(series_ = general_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = F)
 
-write.table(x = analysis_76_8, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_76_8, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 8 ###
 
 
@@ -1200,69 +1199,3 @@ general_opts$group_design_8 = paste0("XXXXXXXXXXXXXXXXXX0XXXXXXXXXXXXXXXXXXXXX0X
   
   
   
-### PUBLICATION 76 ###
-################################################################
-#   Differential expression analysis with limma
-
-
-# general_opts <- list('dir' = 'geo/geo_r',
-#                      'platform' = "GPL25480",
-#                      'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","SPOT_ID"),
-#                      'p_cutoff' = 0.05)
-# general_opts$design <- subset(readr::read_tsv(file = paste0(general_opts$dir, '/76_design.txt')), select = c('Pub.', 'Exp.', 'Drug', 'Dose', 'Tissue', 'Assay', 'Source', 'Additional'))
-# 
-# 
-# analysis_specific_opts <- list(
-#   'Pub.' = 76,
-#   'Exp.' = 28,
-#   'sample_comp' = paste0('test', ' vs ', 'test'),
-#   'series' = "GSE119275",
-#   'group_design' = paste0('test')
-#   )
-# 
-# analysis_76_28 <- get_full_topTable(series_ = analysis_specific_opts$series, platform_ = general_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff)
-  
-
-
-
-### PUBLICATION 76 ###
-
-
-
-
-
-### TEMP FOR ANALYSING ALL CELL TYPES INDIVIDUALLY ###
-# comparisons$subset_logic_2_cell <- stringr::str_detect(string = tolower(comparisons$drug_subset$`Cell id`), pattern = tolower('2484-2-A|3113-6-3|1275-B-3|3121-2-1|2011-3-12|SH-SY5Y|3651-A-A|1835-1-5|2476-D1-2|690-2-1|2607-3-1|676-2-3|3084-2-2|2513-2-4|581-2-1|1792-1-E|2038-1-A|3440-5-A|4506-B-A|9319-2-A|2497-1-C|553-3-1|3234-2-4|449-2-12|2962-2-1|3182-2-4'))
-# 
-# comparisons$drug_cell_subset <- subset(x = comparisons$drug_subset, subset = comparisons$subset_logic_2_cell)
-# 
-# 
-# comparisons$subset_logic_2_0nM <- stringr::str_detect(string = tolower( comparisons$drug_cell_subset$Dosage), pattern = tolower('^0_uM'))
-# comparisons$subset_logic_2_0nM[is.na(comparisons$subset_logic_2_0nM)] <- F
-# 
-# 
-# comparisons$drug_cell_0nM_subset <- subset(x = comparisons$drug_cell_subset, subset = !comparisons$subset_logic_2_0nM)
-# 
-# 
-# comparisons$drug_cell_0nM_subset$Cell_and_plate <- paste0(comparisons$drug_cell_0nM_subset$`Cell id`, '_', comparisons$drug_cell_0nM_subset$`Plate id`)
-# 
-# 
-# comparisons$subsets_to_use <- purrr::map(
-#   .x = unique(comparisons$drug_cell_0nM_subset$Cell_and_plate),
-#   .f = function(x){
-#     subset(comparisons$drug_cell_0nM_subset, subset = comparisons$drug_cell_0nM_subset$Cell_and_plate == x) })
-# names(comparisons$subsets_to_use) <- unique(comparisons$drug_cell_0nM_subset$Cell_and_plate)
-# 
-# 
-# length(comparisons$drug_cell_0nM_subset[[1]]) == sum(purrr::map_int(.x = comparisons$subsets_to_use, .f = function(x){ length(x[[1]]) } ))
-# 
-# 
-# comparisons$actual_comparisons_list <- purrr::map(
-#   .x = comparisons$subsets_to_use, 
-#   .f = function(x) { 
-#     get_control_and_drug_pairs(x)
-#   })
-# 
-# 
-# comparisons$actual_comparisons_list <- rlist::list.flatten(comparisons$actual_comparisons_list)
-### TEMP FOR ANALYSING ALL CELL TYPES INDIVIDUALLY ###

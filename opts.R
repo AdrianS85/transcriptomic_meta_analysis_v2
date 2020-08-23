@@ -1,3 +1,19 @@
+library(loggit)
+default::default(message) <- list(echo = F)
+# rm(list = ls(pattern = 'temp.*|test.*'))
+
+`%>%` <- dplyr::`%>%`
+`%nin%` <- Hmisc::`%nin%`
+
+source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
+source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/bioinfo_little_helpers.R')
+source('functions_GEO_download.R')
+source('functions_pre_preparation.R')
+source('functions_for_annotation.R')
+source('functions_for_data_prep.R')
+
+
+
 set_col_check <- function()
 {
   col_check_ <- list('Exp.' = 'Exp.', 'Comp.' = 'Comp',	'ID' = 'ID',	'adj,P,Val' = 'adj,P,Val',	'P,Value' = 'P,Value',	't' = 't',	'B' = 'B',	'logFC' = 'logFC', 'Probe' = 'Probe',	'Symbol' = 'Symbol',	'Description' = 'Description',	'NM_' = 'NM_',	'Accession' = 'Accession',	'Gene_ID' = 'Gene_ID',	'ENST_' = 'ENST_',	'ENSG_' = 'ENSG_', 'Unigene' = 'Unigene',	'XM_' = 'XM_',	'XR_' = 'XR_',	'NR_' = 'NR_',	'NP_' = 'NP_',	'XP_' = 'XP_',	'Nucleotide' = 'Nucleotide',	'Protein' = 'Protein',	'Unknown' = 'Unknown')
@@ -7,15 +23,22 @@ set_col_check <- function()
 
 
 
+
+
 opts <- list(
   'decimal' = ',',
   'check_cols_for_input' = set_col_check(),
   'dir_r_downloaded_data' = 'geo_ma',
   'dir_seq_input' = 'geo_seq',
+  'dir_descriptions' = 'desc',
   'geo_download_p' = 0.05,
   'pre_prep_reform' = NA,
   'cons_dat' = NA,
-  'ann' = NA)
+  'ann' = NA,
+  'str_sep' = ', ',
+  'ext_gene_name_col' = 'external_gene_name')
+
+
 
 
 
@@ -60,23 +83,45 @@ for (platform in opts$pre_prep_reform[['platform_to_get_exp_and_comp_nb_for']])
 
 
 
-opts$ann <- list('des_exp_id_col' = 'Exp.',
+
+
+opts$ann <- list('exp_id_col' = opts$check_cols_for_input[['Exp.']],
                 'des_species_col' = 'Species',
-                'input_exp_id_col' = opts$check_cols_for_input[['Exp.']],
                 'des_platform_col' = 'Assay',
                 'folder' = 'annotation',
                 'splitting_message_ok' = 'Splitting of %s into %s and %s was ok.',
-                'splitting_message_bad' = 'Annotated data do not have the same number of rows as finalized and leftover data. Splitting failed!'
+                'splitting_message_bad' = 'Annotated data do not have the same number of rows as finalized and leftover data. Splitting failed!',
+                'cutoff_for_logfc' = 0.05
 )
+
+
+
+
+
+opts$data <- list('folder' = 'data',
+                  'folder_gene_groups' = 'gene_groups',
+                  'folder_clusters' = 'clusters',
+                  'exp_and_comp_col' = 'EC_ID',
+                  'logfc_median_col' = 'logFC_median'
+)
+
 
 
 
 dir.create(opts[['dir_r_downloaded_data']])
 dir.create(opts[['dir_seq_input']])
 dir.create(opts$pre_prep_reform[['folder']])
+dir.create(opts$ann[['folder']])
+dir.create(opts$data[['folder']])
+dir.create(paste0(
+  opts$data[['folder']], 
+  '/', 
+  opts$data[['folder_gene_groups']]))
 
-source('functions_for_annotation.R')
-source('functions_GEO_download.R')
-source('functions_pre_preparation.R')
-source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
-source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/bioinfo_little_helpers.R')
+
+
+
+
+
+
+

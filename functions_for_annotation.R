@@ -1,30 +1,9 @@
-library(loggit)
-default::default(message) <- list(echo = F)
-`%>%` <- dplyr::`%>%`
-`%nin%` <- Hmisc::`%nin%`
-
-
-
-# source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/little_helpers.R')
-# source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/bioinfo_little_helpers.R')
-# source('little_helpers_backup.R')
-# source('bioinfo_little_helpers_backup.R')
-
-### !!! DEBUGGING: search and look for merges, binds, string comparisons and regexes
-### !!! pass through some small dataset wholly on debug, step by step
-### !!! Check if there is single value for separator for identifiers
-
-
-# We can pass two types of data into str_identifier_name: 1) one-element string vector, which is the same name as filter name in biomartr-ensembl database. 2) vector of strings with filter name for each experiment dataset in the list of experiments
-#Make sure only one mode of action works here
-### !!! add access to add_new_gene_id_col_originating_from_ncbi_annotation only from master_annotator
 master_annotator <- function(
   descriptions_df, 
-  des_exp_id_col, 
   des_species_col, 
   input_df,
-  input_exp_id_col,
-  input_id_col, # used in: get_the_highest_hit_returning_id_type, annotate_identifiers_to_geneID, annotate_no
+  input_id_col, # used in: get_the_highest_hit_returning_id_type, annotate_identifiers_to_geneID, annotate_no,
+  exp_id_col, 
   PERFORM_A_should_i_prepare_dbs_for_pseudomemoization = F,
   A_return_qa_of_pseudomemoization = F,
   PERFORM_B_get_the_highest_hit_returning_id_type = F,
@@ -33,44 +12,50 @@ master_annotator <- function(
   C_pseudo_memoized_db = NULL,
   A_C_all_ENSG_col = NA, A_C_all_ENST_col = NA, A_C_all_Gene_ID_col = NA, A_C_all_NM_col = NA, A_C_all_Accession_col = NA, A_C_all_Unigene_col = NA, A_C_all_NR_col = NA, A_C_all_XM_col = NA, A_C_all_XR_col = NA, 
   PERFORM_D_ncbi_annotation = F,
-  A_D_string_separator__,
-  C_legacy_D_str_identifier_type__, #Generally: 'Gene name' for annotate_identifiers_to_geneID, 'all' for pseudomemoization and pseudomemoization using all columns)
+  A_D_C_string_separator__,
+  C_legacy_D_str_identifier_type__, #Generally: 'Gene name' for annotate_identifiers_to_geneID. We can pass two types of data into str_identifier_name: 1) one-element string vector, which is the same name as filter name in biomartr-ensembl database. 2) vector of strings with filter name for each experiment dataset in the list of experiments )
   PERFORM_E_add_new_gene_id_col_originating_from_ncbi = F,
   E_PERFORM_D_output
   )
 {
-  ### !!! Check if only one analysis type was selected
+  check_nb_of_options_selected(
+    A = PERFORM_A_should_i_prepare_dbs_for_pseudomemoization,
+    B = PERFORM_B_get_the_highest_hit_returning_id_type,
+    C = PERFORM_C_annotation,
+    D = PERFORM_D_ncbi_annotation,
+    E = PERFORM_E_add_new_gene_id_col_originating_from_ncbi)
   
   
   message('master_annotator: validating description and input column types')
-  validate_col_types(df_ = descriptions_df, col_names_list = list(des_exp_id_col, des_species_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = descriptions_df, col_names_list = list(exp_id_col, des_species_col), col_types_list = list('numeric', 'character'))
   
-  validate_col_types(df_ = input_df, col_names_list = list(input_exp_id_col, input_id_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = input_df, col_names_list = list(exp_id_col, input_id_col), col_types_list = list('numeric', 'character'))
 
   
-  message('master_annotator: ordering descriptions and input by input_exp_id_col')
-  descriptions_df <- descriptions_df[order(descriptions_df[[des_exp_id_col]]),]
-  input_df <- input_df[order(input_df[[input_exp_id_col]]),]
+  message('master_annotator: ordering descriptions and input by exp_id_col')
+  descriptions_df <- descriptions_df[order(descriptions_df[[exp_id_col]]),]
+  input_df <- input_df[order(input_df[[exp_id_col]]),]
 
   
   
-  message('master_annotator: subsetting des_exp_id_col, des_species_col from descriptions')
+  message('master_annotator: subsetting exp_id_col, des_species_col from descriptions')
   exp_species__ <- descriptions_df %>%
-    dplyr::select(des_exp_id_col, des_species_col) %>%
+    dplyr::select(exp_id_col, des_species_col) %>%
     unique()
   
-  exp_species__ <- subset(x = exp_species__, subset = exp_species__[[des_exp_id_col]] %in% unique(input_df[[input_exp_id_col]]))
+
+  ### !!! this seems to be bugged. If I dont first set subset_ value, than for 1 row exp_species subset returns 0 rows. I cannot replicate this behavior outside the function
+  subset_ <- exp_species__[[exp_id_col]] %in% unique(input_df[[exp_id_col]])
+  exp_species__ <- subset(x = exp_species__, subset = subset_)
+
   
-  message('master_annotator: normalizing species names') ### !!! show which species names are used?
+  message('master_annotator: normalizing species names')
   exp_species__[[des_species_col]] <- normalize_species_names(exp_species__[[des_species_col]])
   
   
   message('master_annotator: splitting input by experiment column')
-  LIST_DATA__ <- split(input_df, f = input_df[[input_exp_id_col]])
-  ### Prepare secondary input ###
-  
-  
-  
+  LIST_DATA__ <- split(input_df, f = input_df[[exp_id_col]])
+
   if (PERFORM_A_should_i_prepare_dbs_for_pseudomemoization == T) {
     message('master_annotator: constructing gene name database')
     pseudo_memoization_db <- prepare_db_for_pseudo_memoization(
@@ -78,7 +63,7 @@ master_annotator <- function(
       des_species_vec = exp_species__[[des_species_col]],
       ENSG_ = A_C_all_ENSG_col, ENST_ = A_C_all_ENST_col, Gene_ID = A_C_all_Gene_ID_col, NM_ = A_C_all_NM_col, Accession = A_C_all_Accession_col, Unigene = A_C_all_Unigene_col, NR_ = A_C_all_NR_col, XM_ = A_C_all_XM_col, XR_ = A_C_all_XR_col, 
       return_qa_of_pseudomemoization_ = A_return_qa_of_pseudomemoization,
-      string_separator__ = A_D_string_separator__)
+      string_separator__ = A_D_C_string_separator__)
     
     memoized_db <- pseudo_memoize(pseudo_memoization_db_ = pseudo_memoization_db)
     
@@ -88,7 +73,7 @@ master_annotator <- function(
     message('master_annotator: identifying best ensembl-based platforms to be used for analysis')
     highest_hits <- get_the_highest_hit_returning_id_type(
       exp_species_ = exp_species__, 
-      des_exp_id_col_ = des_exp_id_col,
+      des_exp_id_col_ = exp_id_col,
       des_species_col_ = des_species_col,
       list_LIST_DATA_ = LIST_DATA__,
       input_probe_col_ = input_id_col,
@@ -105,7 +90,8 @@ master_annotator <- function(
         str_vector_of_species_names__ = exp_species__[[des_species_col]], 
         input_id_col_ = input_id_col,
         ENSG_col = A_C_all_ENSG_col, ENST_col = A_C_all_ENST_col, Gene_ID_col = A_C_all_Gene_ID_col, NM_col = A_C_all_NM_col, Accession_col = A_C_all_Accession_col, Unigene_col = A_C_all_Unigene_col, NR_col = A_C_all_NR_col, XM_col = A_C_all_XM_col, XR_col = A_C_all_XR_col,
-        pseudo_memoized_db_ = C_pseudo_memoized_db)
+        pseudo_memoized_db_ = C_pseudo_memoized_db,
+        str_sep_ = A_D_C_string_separator__)
     
     return(annotation)
     
@@ -113,13 +99,13 @@ master_annotator <- function(
     message('master_annotator: translating all gene names in the data to gene ids using ncbi')
     annotated_with_ncbi <- annotate_identifiers_to_geneID(
       descriptions_df = exp_species__, 
-      desc_exp_id_col_ = des_exp_id_col, 
+      desc_exp_id_col_ = exp_id_col, 
       desc_species_col_ = des_species_col, 
       input_df_ = input_df, 
-      input_exp_id_col_ = input_exp_id_col, 
+      input_exp_id_col_ = exp_id_col, 
       input_id_col_ = input_id_col,
-      string_separator_ = A_D_string_separator__,
-      chr_gene_identifier_type = C_legacy_D_str_identifier_type__,# should be 'Gene name' for gene name
+      string_separator_ = A_D_C_string_separator__,
+      chr_gene_identifier_type = C_legacy_D_str_identifier_type__# should be 'Gene name' for gene name
     )
     
     return(annotated_with_ncbi)
@@ -128,13 +114,13 @@ master_annotator <- function(
     message('master_annotator: adding ncbi-derived gene ids to original data')
     df_with_new_col <- add_new_gene_id_col_originating_from_ncbi_annotation(
       descriptions_df = exp_species__, 
-      desc_exp_id_col = des_exp_id_col, 
-      desc_organism_col = des_species_col,
+      desc_exp_id_col = exp_id_col, 
+      organism_col = des_species_col,
       input_df = input_df, 
-      input_exp_id_col = input_exp_id_col,
-      input_input_id_col = input_id_col, 
-      input_organism_col = 'Species', ### !!! We need to make sure, that PERFORM_E step returns input_organism_col exactly the same as desc_organism_col. Then, we need to remove input_organism_col
-      perform_ncbi_annotation_output = E_PERFORM_D_output)
+      input_exp_id_col = exp_id_col,
+      input_input_id_col = input_id_col,
+      perform_ncbi_annotation_output = E_PERFORM_D_output,
+      str_sep = A_D_C_string_separator__)
     
     return(df_with_new_col)
   } else stop('No analysis type was selected. See PERFORM_ arguments for available analyses.')
@@ -238,31 +224,33 @@ get_the_highest_hit_returning_id_type <- function(
   check_annotation_percentage <- purrr::map2(
     .x = HIGHEST_HIT_LIST, 
     .y = proper_length_vector_for_checking_annotation_percentage, 
-    .f = function(.x, .y) {  (length(unique(.x[[1]][[1]])) / .y) * 100 }
+    .f = function(.x, .y) {  
+      perc <- (length(unique(.x[[1]][[1]])) / .y) * 100
+      
+      if (perc < 50) {
+        warning(sprintf('\nWARNING!\nWARNING!\nWARNING!\nplatform %s has annotation lower than 50 percent, it may be an artifact', colnames(.x[[1]])[[1]]))
+      }
+      
+      return(perc)
+      }
   )
   
   check_annotation_percentage <- data.frame(exp_species_[[des_exp_id_col_]], rlist::list.rbind(check_annotation_percentage))
-  colnames(check_annotation_percentage) <- c('Exp_ID', 'highest_annotated_identifier_percentages') ### !!! This should give error as EXP_ID may not be present
+  colnames(check_annotation_percentage) <- c('Exp_ID', 'highest_annotated_identifier_percentages')
   
   # Here we simply copy/establish names of features, that were highest by themselves. The conditions ask: 1) is there at least a single hit with highest number (I dont know if there can be 0 though...) 2) Is the first (and though each) highest hit list has at least single hit?
   NAMES_HIGHEST_HIT_LIST <- lapply(X = HIGHEST_HIT_LIST, FUN = set_0_hit_annotations_to_na)
   NAMES_HIGHEST_HIT_LIST <- data.frame(exp_species_[[des_exp_id_col_]], rlist::list.rbind(NAMES_HIGHEST_HIT_LIST))
-  colnames(NAMES_HIGHEST_HIT_LIST) <- c('Exp_ID', 'platform_to_use')  ### !!! This should give error as EXP_ID may not be present
+  colnames(NAMES_HIGHEST_HIT_LIST) <- c('Exp_ID', 'platform_to_use')
   
+  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = check_annotation_percentage, by = 'Exp_ID')
   
-  ###### Here we estalish correct lists to analyzed in further steps (currently - need to remove experiments with microarrays not captured in ensembl) ######
-  ###### Yeah, i dont know what to do here
-  WHICH_EXP_TO_ANAL <- seq_along(NAMES_HIGHEST_HIT_LIST[[1]])
-  
-  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = check_annotation_percentage, by = 'Exp_ID')  ### !!! This should give error as EXP_ID may not be present
-  
-  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = exp_species_, by.x = 'Exp_ID', by.y = des_exp_id_col_)  ### !!! This should give error as EXP_ID may not be present
+  NAMES_HIGHEST_HIT_LIST <- merge(x = NAMES_HIGHEST_HIT_LIST, y = exp_species_, by.x = 'Exp_ID', by.y = des_exp_id_col_)
   
   names(ANNOT_SHORT_LIST_DATA) <- exp_species_[[des_exp_id_col_]]
+
   
-  id_platf$highest_hit_analysis$id_to_be_used_for_annotation <- as.character(id_platf$highest_hit_analysis$platform_to_use)
-  
-  result_list <- list('ids_to_be_used_for_annotation' = as.character(NAMES_HIGHEST_HIT_LIST$platform_to_use), 'which_exp_to_analyze' = WHICH_EXP_TO_ANAL, 'best_ID' = NAMES_HIGHEST_HIT_LIST, 'best_ID_annotation' = HIGHEST_HIT_LIST, 'annotations_from_every_ID' = ANNOT_SHORT_LIST_DATA, 'perc_annotations_from_every_ID' = all_ID_annotations)
+  result_list <- list('best_ID' = NAMES_HIGHEST_HIT_LIST, 'best_ID_annotation' = HIGHEST_HIT_LIST, 'annotations_from_every_ID' = ANNOT_SHORT_LIST_DATA, 'perc_annotations_from_every_ID' = all_ID_annotations)
 
   return(result_list)
 }
@@ -501,24 +489,32 @@ write_lenghts_of_list_objects <- function(list_, string_name_of_the_file, int_le
 
 
 annotate_now <- function(
-  list_LIST_DATA_,  #LIST_DATA
+  list_LIST_DATA_,
   input_id_col_,
   str_identifier_type_,
   str_vector_of_species_names__,
   ENSG_col, ENST_col, Gene_ID_col, NM_col, Accession_col, Unigene_col, NR_col, XM_col, XR_col,
-  pseudo_memoized_db_)
+  pseudo_memoized_db_,
+  str_sep_)
 {
-  for (n in seq_along(list_LIST_DATA_))
-    # loop through experiments
-  {
-    if (!is.null(pseudo_memoized_db_)) {
-      identifiers_used_for_annotation <- rep(
-        return_all_usable_id_types(ENSG_ = ENSG_col, ENST_ = ENST_col, Gene_ID = Gene_ID_col, NM_ = NM_col, Accession = Accession_col, Unigene = Unigene_col, XM_ = XM_col, XR_ = XR_col, NR_ = NR_col, list_LIST_DATA_ = list_LIST_DATA_[[n]]),
-        length(list_LIST_DATA_))
+  if (!is.null(pseudo_memoized_db_)) {
+    for (n in seq_along(list_LIST_DATA_)) # loop through experiments
+    {
+      identifiers_used_for_annotation <- return_all_usable_id_types(
+          ENSG_ = ENSG_col,
+          ENST_ = ENST_col,
+          Gene_ID = Gene_ID_col,
+          NM_ = NM_col,
+          Accession = Accession_col,
+          Unigene = Unigene_col,
+          XM_ = XM_col,
+          XR_ = XR_col,
+          NR_ = NR_col,
+          list_LIST_DATA_ = list_LIST_DATA_[[n]])
       
+      message('annotate_now: working on step ', n, '; experiment ', names(list_LIST_DATA_)[[n]])
+      message(paste0('annotate_now: identifiers used for annotation in this step are: ', identifiers_used_for_annotation))
       message('annotate_now: performing pseudo-memoized database workflow')
-      
-      ### !!! Here add message on which ids are used for given experiment
       
       if (is.null(list_LIST_DATA_[[n]]$external_gene_name)) {
         list_LIST_DATA_[[n]]$external_gene_name <- NA
@@ -539,36 +535,45 @@ annotate_now <- function(
             if (is.na(list_LIST_DATA_[[n]]$external_gene_name[[gene_row_nb]]))
             {
               ids_to_check <- stringr::str_split(
-                  string = list_LIST_DATA_[[n]][[gene_row_nb, identifiers_of_given_type$col_name]],
-                  pattern = ', ',
-                  simplify = T)
+                string = list_LIST_DATA_[[n]][[gene_row_nb, identifiers_of_given_type$col_name]],
+                pattern = str_sep_,
+                simplify = T
+              )
               
               for (id in ids_to_check)
               {
-                if (is.na(list_LIST_DATA_[[n]]$external_gene_name[[gene_row_nb]]))
+                if (is.na(list_LIST_DATA_[[n]]$external_gene_name[[gene_row_nb]])  & !is.na(id))
                 {
-                  db_to_search <- pseudo_memoized_db_[[str_vector_of_species_names__[[n]]]][[identifiers_of_given_type$filter_name]]
+                  db_to_search <-
+                    pseudo_memoized_db_[[str_vector_of_species_names__[[n]]]][[identifiers_of_given_type$filter_name]]
                   
-                  ### !!! Check if there is surely only one id per row in pseudomemoized database
-                  getBM_result_logic <- stringr::str_detect(string = db_to_search[[1]], pattern = stringr::fixed(id))
+                  getBM_result_logic <-
+                    stringr::str_detect(string = db_to_search[[1]],
+                                        pattern = stringr::fixed(id))
                   
-                  getBM_result <- subset(x = db_to_search, subset = getBM_result_logic)
+                  getBM_result <-
+                    subset(x = db_to_search, subset = getBM_result_logic)
                   
                   if (length(getBM_result[[1]]) == 0) {
                     if (is.na(list_LIST_DATA_[[n]]$unidentifed_identifers[[gene_row_nb]])) {
-                      
                       list_LIST_DATA_[[n]]$unidentifed_identifers[[gene_row_nb]] <- id
                       
                     } else {
-                      list_LIST_DATA_[[n]]$unidentifed_identifers[[gene_row_nb]] <- paste0(list_LIST_DATA_[[n]]$unidentifed_identifers[[gene_row_nb]], ', ', id)
+                      list_LIST_DATA_[[n]]$unidentifed_identifers[[gene_row_nb]] <-
+                        paste0(list_LIST_DATA_[[n]]$unidentifed_identifers[[gene_row_nb]],
+                               str_sep_,
+                               id)
                     }
                     
                   } else {
-                    ### !!! Check if there is surely only one id per row in pseudomemoized database
-                    getBM_result_ext <- paste(getBM_result$external_gene_name, collapse = ', ')
+                    getBM_result_ext <-
+                      paste(getBM_result$external_gene_name,
+                            collapse = str_sep_)
                     
-                    list_LIST_DATA_[[n]]$external_gene_name[[gene_row_nb]] <- getBM_result_ext
-                    list_LIST_DATA_[[n]]$identifed_identifer[[gene_row_nb]] <- id
+                    list_LIST_DATA_[[n]]$external_gene_name[[gene_row_nb]] <-
+                      getBM_result_ext
+                    list_LIST_DATA_[[n]]$identifed_identifer[[gene_row_nb]] <-
+                      id
                   }
                 } else
                   break
@@ -579,88 +584,107 @@ annotate_now <- function(
         } else
           break
       }
-    } else 
-      {
-      ###################
-      ### LEGACY PART ###
-      ###################
-        
-        message('annotate_now: performing legacy workflow')
-        
-        WHICH_EXP_TO_ANAL <- seq(length(list_LIST_DATA_))
-        ANNOT_LIST_DATA <- list()
-        
-        if (length(str_identifier_type_) != 1)
-        {
-          identifiers_used_for_annotation <- str_identifier_type_
-        } else
-        {
-          identifiers_used_for_annotation <-
-            set_identifiers_used_for_annotation_if_not_probeID(str_identifier_type = str_identifier_type_,
-                                                               list_LIST_DATA = list_LIST_DATA_)
-        }
-        
-        for (n in WHICH_EXP_TO_ANAL)
-        {
-          if (!is.na(identifiers_used_for_annotation[[n]])) {
-            usedMart_ <- set_mart_to_be_used(species_ = str_vector_of_species_names__[n], int_loop = n)
-            
-            message(paste0(
-                'Annotating experiment ',
-                names(list_LIST_DATA_[n]),
-                ' in step ',
-                n,
-                ' with identifier ',
-                identifiers_used_for_annotation[[n]]
-              )
-            )
-            ANNOT_LIST_DATA[[n]] <- biomaRt::getBM(
-              attributes = c(
-                identifiers_used_for_annotation[[n]],
-                "external_gene_name"
-              ),
-              filters = identifiers_used_for_annotation[[n]],
-              values = list_LIST_DATA_[[n]][[input_id_col_]],
-              uniqueRows = F,
-              mart = usedMart_)
-          } else {
-            ANNOT_LIST_DATA[[n]] <-
-              tibble::tibble('id_not_found' = list_LIST_DATA_[[n]][[input_id_col_]])
-            ANNOT_LIST_DATA[[n]]$external_gene_name <- NA}
-        }
-        
-        FINAL_ANNOT_LIST_DATA <- purrr::pmap(
-            .l = list(
-              list_LIST_DATA_,
-              ANNOT_LIST_DATA,
-              identifiers_used_for_annotation),
-            .f = function(.x, .y, .z)
-            {
-              if (!is.na(.z)) { merge(x = .x, y = .y, by = input_id_col_, by.y = .z, all.x = T)
-                } else { merge(x = .x, y = .y, by = input_id_col_, by.y = 'id_not_found', all.x = T) }
-            })
-        
-        ### !!! Check if col are the same?
-        
-        DF_FINAL_ANNOT_LIST_DATA <-
-          rlist::list.rbind(FINAL_ANNOT_LIST_DATA)
-  
-        DF_FINAL_ANNOT_LIST_DATA <- unique(DF_FINAL_ANNOT_LIST_DATA)
-        
-        DF_FINAL_ANNOT_LIST_DATA <-
-          collapse_annotated_names_for_given_probe(
-            DF_FINAL_ANNOT_LIST_DATA,
-            list_LIST_DATA__ = list_LIST_DATA_,
-            input_id_col__ = input_id_col_
-          ) ### !!! whatch out for this input_id_col_, it may be actually str_identifier_type_
-  
-        return(DF_FINAL_ANNOT_LIST_DATA)
-      }
     }
+    
     return(list_LIST_DATA_)
+    
+  } else {
     ###################
     ### LEGACY PART ###
     ###################
+    ## !! This part doesnt return undientfied_indetifiers (column reporting what was checked, but not found) - for now its ok, but probably to look at in the future
+    message('annotate_now: performing legacy workflow')
+    
+    ANNOT_LIST_DATA <- list()
+    
+    if (length(str_identifier_type_) != 1)
+    {
+      identifiers_used_for_annotation <- str_identifier_type_
+    } else
+    {
+      identifiers_used_for_annotation <-
+        set_identifiers_used_for_annotation_if_not_probeID(str_identifier_type = str_identifier_type_,
+                                                           list_LIST_DATA = list_LIST_DATA_)
+    }
+    
+    for (n in seq_along(list_LIST_DATA_))
+    {
+      if (!is.na(identifiers_used_for_annotation[[n]])) {
+        usedMart_ <-
+          set_mart_to_be_used(species_ = str_vector_of_species_names__[n], int_loop = n)
+        
+        message(
+          paste0(
+            'Annotating experiment ',
+            names(list_LIST_DATA_[n]),
+            ' in step ',
+            n,
+            ' with identifier ',
+            identifiers_used_for_annotation[[n]]
+          )
+        )
+        ANNOT_LIST_DATA[[n]] <- biomaRt::getBM(
+          attributes = c(
+            identifiers_used_for_annotation[[n]],
+            "external_gene_name"
+          ),
+          filters = identifiers_used_for_annotation[[n]],
+          values = list_LIST_DATA_[[n]][[input_id_col_]],
+          uniqueRows = F,
+          mart = usedMart_
+        )
+      } else {
+        ANNOT_LIST_DATA[[n]] <-
+          tibble::tibble('id_not_found' = list_LIST_DATA_[[n]][[input_id_col_]])
+        ANNOT_LIST_DATA[[n]]$external_gene_name <- NA
+      }
+    }
+    
+    FINAL_ANNOT_LIST_DATA <- purrr::pmap(
+      .l = list(
+        list_LIST_DATA_,
+        ANNOT_LIST_DATA,
+        identifiers_used_for_annotation
+      ),
+      .f = function(.x, .y, .z)
+      {
+        if (!is.na(.z)) {
+          merge(
+            x = .x,
+            y = .y,
+            by = input_id_col_,
+            by.y = .z,
+            all.x = T
+          )
+        } else {
+          merge(
+            x = .x,
+            y = .y,
+            by = input_id_col_,
+            by.y = 'id_not_found',
+            all.x = T
+          )
+        }
+      }
+    )
+
+    DF_FINAL_ANNOT_LIST_DATA <-
+      rlist::list.rbind(FINAL_ANNOT_LIST_DATA)
+    
+    DF_FINAL_ANNOT_LIST_DATA <- unique(DF_FINAL_ANNOT_LIST_DATA)
+    
+    DF_FINAL_ANNOT_LIST_DATA <-
+      collapse_annotated_names_for_given_probe(
+        DF_FINAL_ANNOT_LIST_DATA,
+        list_LIST_DATA__ = list_LIST_DATA_,
+        input_id_col__ = input_id_col_,
+        str_sep = str_sep_)
+    
+    return(DF_FINAL_ANNOT_LIST_DATA)
+  }
+  ###################
+  ### LEGACY PART ###
+  ###################
 }
 
 
@@ -711,7 +735,7 @@ set_identifiers_used_for_annotation_if_not_probeID <- function(str_identifier_ty
 
 
 
-collapse_annotated_names_for_given_probe <- function(df_annotated, list_LIST_DATA__, input_id_col__)
+collapse_annotated_names_for_given_probe <- function(df_annotated, list_LIST_DATA__, input_id_col__, str_sep)
 {
   tryCatch({df_annotated <-
              aggregate(as.formula(paste0('external_gene_name ~ ', input_id_col__)),
@@ -728,13 +752,14 @@ collapse_annotated_names_for_given_probe <- function(df_annotated, list_LIST_DAT
     as.character(lapply(
       X = df_annotated$external_gene_name,
       FUN = function(x) {
-        paste(x, collapse = "; ")
+        paste(x, collapse = str_sep)
       }
     ))
   
-  df_annotated$external_gene_name <- change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName(df_annotated$temp_gene_name)
+  df_annotated$external_gene_name <- change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName(
+    df_annotated$temp_gene_name, 
+    regex_pattern_to_split_with = str_sep)
   
-  ### !!! here error with probe id
   df_annotated <- subset(x = df_annotated, select = c(input_id_col__, 'external_gene_name'))
   
   bind_list_LIST_DATA__ <- rlist::list.rbind(list_LIST_DATA__)
@@ -769,9 +794,9 @@ collapse_annotated_names_for_given_probe <- function(df_annotated, list_LIST_DAT
 
 
 
-### !!! I dont think this works! - it does not takes into account that there may be two or more identfiers in any cell of input df.
-# Input: Vector of gene names, needs to be a proper char vector, with gene names separ
-change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName <- function(char_vec, regex_pattern_to_split_with = '; ')
+## !! This is not wrong, but im not sure why is this neccesary
+# # Input: Vector of gene names, needs to be a proper char vector, with gene names separ
+change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName <- function(char_vec, regex_pattern_to_split_with)
 {
   # This part collapses multiple same values to single value and saves it as temp column
   temp_list <-
@@ -783,13 +808,13 @@ change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName <- function(c
           pattern = regex_pattern_to_split_with,
           simplify = T
         ))
-        
+
         temp <- unique(temp)
-        
+
         return(temp)
       }
     )
-  
+
   # Check if the value for given row is proper char, or leftover list ' c("blabla") '
   was_the_value_uniqued <-
     as.logical(lapply(
@@ -803,7 +828,7 @@ change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName <- function(c
         }
       }
     ))
-  
+
   bullshit_list_derived_strings <-
     as.character(
       purrr::map_if(
@@ -817,7 +842,7 @@ change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName <- function(c
         }
       )
     )
-  
+
   proper_strings <-
     as.character(
       purrr::map_if(
@@ -831,11 +856,11 @@ change_vector_of_mixed_normal_and_c_geneNames_into_unique_geneName <- function(c
         }
       )
     )
-  
+
   resulting_char_vector <-
     paste0(bullshit_list_derived_strings,
            proper_strings)
-  
+
   return(resulting_char_vector)
 }
 
@@ -950,8 +975,6 @@ prepare_db_for_pseudo_memoization <- function(LIST_DATA___, des_species_vec, ENS
         
         id_vector <- unique(as.character(rlist::list.cbind(id_vector)))
         
-        id_vector <- id_vector[id_vector != '']
-        
         id_vector <- id_vector[order(id_vector)]
         
         return(list(id_column, id_vector))
@@ -1021,12 +1044,18 @@ pseudo_memoize <- function(pseudo_memoization_db_)
     mart_for_using <- set_mart_to_be_used(species_ = species__$species, int_loop = 0)
     memoized_id <- purrr::map2(.x = species__$columns, .y = names(species__$columns), .f = function(column__, col_name)
       {
-      biomaRt::getBM(
+      memoized_data <- biomaRt::getBM(
         attributes = c(col_name, "external_gene_name"),
         filters = col_name,
         values = column__,
         uniqueRows = T,
         mart = mart_for_using)
+      
+      memoized_data <- subset(x = memoized_data, subset = !is.na(memoized_data[["external_gene_name"]]))
+      
+      memoized_data <- subset(x = memoized_data, subset = memoized_data[["external_gene_name"]] != '') 
+      
+      return(memoized_data)
       })
   })
   
@@ -1061,18 +1090,17 @@ pseudo_memoize <- function(pseudo_memoization_db_)
 get_gemma_annotations_for_data <- function(
   descriptions_df,
   des_platform_col,
-  des_exp_id_col,
   named_list_gemma_platforms, #from download_platforms_from_gemma
   gemma_probe_col,
   input_df,
-  input_exp_id_col,
+  exp_id_col,
   input_probe_col)
 {
   
   ### Make sure input is proper ###
-  validate_col_types(df_ = descriptions_df, col_names_list = list(des_exp_id_col, des_platform_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = descriptions_df, col_names_list = list(exp_id_col, des_platform_col), col_types_list = list('numeric', 'character'))
   
-  validate_col_types(df_ = input_df, col_names_list = list(input_exp_id_col, input_probe_col), col_types_list = list('numeric', 'character'))
+  validate_col_types(df_ = input_df, col_names_list = list(exp_id_col, input_probe_col), col_types_list = list('numeric', 'character'))
   
   purrr::walk(.x = named_list_gemma_platforms, .f = function(x) {
     if (!is.na(x)) {
@@ -1106,11 +1134,11 @@ get_gemma_annotations_for_data <- function(
     
     
     composite_list[[platform]]$input_list <- purrr::map(
-      .x = unique(composite_list[[platform]]$descriptions[[des_exp_id_col]]), 
+      .x = unique(composite_list[[platform]]$descriptions[[exp_id_col]]), 
       .f = function(.x) {
         subset(
           x = input_df, 
-          subset = input_df[[input_exp_id_col]] == .x)
+          subset = input_df[[exp_id_col]] == .x)
       })
     
     composite_list[[platform]]$input <- rlist::list.rbind(composite_list[[platform]]$input_list)
@@ -1232,26 +1260,20 @@ GPL8160_post_gemma_wrapper <- function(annotation_raw, divider_of_values_in_seri
 
 
 
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
-### !!!
 
 
 
 
-### !!! make this pseudomemoization
+
+
+
+
+
+
+
+
+
+
 
 
 annotate_identifiers_to_geneID <- function(
@@ -1266,30 +1288,23 @@ annotate_identifiers_to_geneID <- function(
 {
 
   input_plus_species <- merge(x = input_df_, y = descriptions_df_, by.x = input_exp_id_col_, by.y = desc_exp_id_col_)
-  
-  
-  ### !!! here get df with exp names and all unique gene names in the input.
-  
+
   unique_input_plus_species <- get_vector_of_single_unique_gene_ids_and_species(
     input_df = input_plus_species, 
     identifer_col = input_id_col_, 
     species_col = desc_species_col_, 
     string_separator = string_separator_)
   
-  list_query_for_ncbi <- get_query_for_ncbi_geneID_annotation(
+  query_for_ncbi <- get_query_for_ncbi_geneID_annotation(
     char_vec_gene_id_to_query_with = unique_input_plus_species[[input_id_col_]], 
     char_vec_organism = unique_input_plus_species[[desc_species_col_]], 
     chr_gene_identifier = chr_gene_identifier_type)
 
-  ### !!! we need to return list_query_for_ncbi$query_for_ncbi for qa analysis. Also query results - strvec_ncbi_query_for_identifers
-
-  strvec_ncbi_query_for_identifers <- search_for_ids_in_ncbi(list_query_for_ncbi$query_for_ncbi)
+  strvec_ncbi_query_for_identifers <- search_for_ids_in_ncbi(query_for_ncbi)
 
   annotated_data <- make_and_write_table_with_original_and_ncbi_ids(
     entrez_gene_search_output = strvec_ncbi_query_for_identifers, 
-    df_original_data = input_plus_species,
-    str_to_cut_from_ncbi_response_to_form_back_Probe_ID = list_query_for_ncbi$linker_string_crucial_for_returning_ProbeID_to_proper_form, 
-    exp_species___ = descriptions_df_)
+    df_original_data = input_plus_species)
 
   return(annotated_data)
 }
@@ -1324,13 +1339,11 @@ get_query_for_ncbi_geneID_annotation <- function(
   char_vec_organism <- stringr::str_replace(string = char_vec_organism, pattern = normalized_species_names[['sheep']], replacement = 'ovis aries')
   char_vec_organism <- stringr::str_replace(string = char_vec_organism, pattern = normalized_species_names[['saimiri']], replacement = 'saimiri')
   
-  linker_string_crucial_for_returning_ProbeID_to_proper_form <- paste0('[', chr_gene_identifier, '] AND ')
+  linker_string_crucial_for_returning_ProbeID_to_proper_form <- paste0('[', chr_gene_identifier, '] AND ') 
 
-  query_vector <- paste0(char_vec_gene_id_to_query_with, linker_string_crucial_for_returning_ProbeID_to_proper_form, char_vec_organism, '[Organism]')
-  
-  return_ <- list('query_for_ncbi' = query_vector, 'linker_string_crucial_for_returning_ProbeID_to_proper_form' = linker_string_crucial_for_returning_ProbeID_to_proper_form)
-  # , 'the_species_name_vector' = the_species_name_vector
-  return(return_)
+  query_vector <- paste0(char_vec_gene_id_to_query_with, linker_string_crucial_for_returning_ProbeID_to_proper_form, char_vec_organism, '[Organism]') 
+
+  return(query_vector)
 }
 
 
@@ -1353,11 +1366,11 @@ get_query_for_ncbi_geneID_annotation <- function(
 
 
 ### Annotate unidentified, !!!but unique!!! gene identifiers to gene-id using ncbi gene database. INPUT: delay_between_queries - 0.5 produces errors even. 3 times per second my asshole. We can query ncbi databases only 3 times per second - that is the reason for sys.sleep time! A
-search_for_ids_in_ncbi <- function(str_vector_of_ids, delay_between_queries = 0.5) ### !!! We should rename this variable, because this is actually query vector, and not id vector per se. Query vector includes id, but also includes organism (and other, perhaps?)
+search_for_ids_in_ncbi <- function(query_vector, entrez_db = 'gene', delay_between_queries = 0.5)
 {
   ids <- list()
   counter <- 1
-  for (id_ in str_vector_of_ids)
+  for (id_ in query_vector)
   {
     done <- F
     
@@ -1366,8 +1379,7 @@ search_for_ids_in_ncbi <- function(str_vector_of_ids, delay_between_queries = 0.
       message(counter)
       
       tryCatch( {
-        ### !!! Jeżeli dopusczamy opcje, żeby badać co innego niż "gene name", to db powinno być osobną zmienną
-        ids[[counter]] <- rentrez::entrez_search(db="gene", term = id_)
+        ids[[counter]] <- rentrez::entrez_search(db = entrez_db, term = id_)
         
         done <- T
         
@@ -1404,15 +1416,10 @@ search_for_ids_in_ncbi <- function(str_vector_of_ids, delay_between_queries = 0.
 
 
 
-#This function should except output of search_for_ids function. BEWARE - this only returns first geneID found INPUT: ### !!! entrez_gene_search_output is actually a list!!!
+#This function should except output of search_for_ids function. BEWARE - this only returns first geneID found INPUT. 
 make_and_write_table_with_original_and_ncbi_ids <- function(
   entrez_gene_search_output, 
-  df_original_data, 
-  str_name_of_the_file = 'generic.tsv', 
-  experiment_directory_name = '.', 
-  str_to_cut_from_ncbi_response_to_form_back_Probe_ID, 
-  vector_of_species_names_used_, 
-  exp_species___)
+  df_original_data)
 {
   
   extracted_data <- purrr::map(.x = entrez_gene_search_output, .f = function(x){
@@ -1437,7 +1444,7 @@ make_and_write_table_with_original_and_ncbi_ids <- function(
   colnames(extracted_data_df) <- c('Gene_ID', 'input_id', 'organism')
   rownames(extracted_data_df) <- seq_along(extracted_data_df[[1]])
   
-  extracted_data_df$dummy_exp <- as.numeric(extracted_data_df$organism)
+  extracted_data_df$dummy_exp <- as.numeric(as.factor(extracted_data_df$organism))
   
   extracted_data_df$Gene_ID <- as.character(extracted_data_df$Gene_ID)
   extracted_data_df$input_id <- as.character(extracted_data_df$input_id)
@@ -1515,33 +1522,29 @@ get_vector_of_single_unique_gene_ids_and_species <- function(
 add_new_gene_id_col_originating_from_ncbi_annotation <- function(
   descriptions_df,
   desc_exp_id_col,
-  desc_organism_col,
+  organism_col,
   input_df, 
   input_input_id_col,
   input_exp_id_col,
-  input_organism_col, 
   perform_ncbi_annotation_output, 
   output_gene_id_col = 'Gene_ID', 
   output_input_id_col = 'input_id', 
   output_organism_col = 'organism', 
-  new_col_name = 'Gene_ID_from_ncbi'){
-  
-  descriptions_df[[desc_organism_col]] <- normalize_species_names(descriptions_df[[desc_organism_col]])
-  
+  new_col_name = 'Gene_ID_from_ncbi',
+  str_sep){
+
   perform_ncbi_annotation_output[[output_organism_col]] <- normalize_species_names(perform_ncbi_annotation_output[[output_organism_col]])
-  
-  descriptions_df <- unique(subset(x = descriptions_df, select = c(desc_exp_id_col, desc_organism_col)))
-  
-  input_df[[input_organism_col]] <- recode_values_based_on_key(
+
+  input_df[[organism_col]] <- recode_values_based_on_key(
     to_recode_chrvec = as.character(input_df[[input_exp_id_col]]), 
     replace_this_chrvec = as.character(descriptions_df[[desc_exp_id_col]]), 
-    with_this_chrvec = descriptions_df[[desc_organism_col]])
+    with_this_chrvec = descriptions_df[[organism_col]])
   
   input_list <- list()
   output_list <- list()
   
-  input_list <- purrr::map(.x = unique(input_df[[input_organism_col]]), .f = function(species){
-    input <- subset(x = input_df, subset = input_df[[input_organism_col]] == species)
+  input_list <- purrr::map(.x = unique(input_df[[organism_col]]), .f = function(species){
+    input <- subset(x = input_df, subset = input_df[[organism_col]] == species)
     output <- subset(x = perform_ncbi_annotation_output, subset = perform_ncbi_annotation_output[[output_organism_col]] == species)
     
     input[[new_col_name]] <- NA
@@ -1550,7 +1553,7 @@ add_new_gene_id_col_originating_from_ncbi_annotation <- function(
       
       input[[new_col_name]][[row_nb]] <- split_string_by_pattern_and_replace_values_according_to_key(
         string_to_split = input[[input_input_id_col]][[row_nb]], 
-        pattern_to_split_with = ', ', 
+        pattern_to_split_with = str_sep, 
         key_replace_this_chrvec = output[[output_input_id_col]], 
         key_with_this_chrvec = output[[output_gene_id_col]], 
         return_unique_values = T)
@@ -1561,7 +1564,138 @@ add_new_gene_id_col_originating_from_ncbi_annotation <- function(
   
   input_df <- rlist::list.rbind(input_list)
   
-  input_df[[input_organism_col]] <- NULL
+  input_df[[organism_col]] <- NULL
   
   return(input_df)
 }
+
+
+
+
+
+
+
+assert_desc_and_input_have_the_same_exp_col_wrapper <- function(data_, desc_, exp_col)
+{
+  data_exps <- subset(x = data_, select = exp_col)
+  desc_exps <- subset(x = desc_, select = exp_col)
+  
+  data_exps <- unique(data_exps)
+  desc_exps <- unique(desc_exps)
+
+  are_exps_the_same <- all(data_exps[[1]] %in% desc_exps[[1]])
+  
+  if (are_exps_the_same != T) {
+    warning('experiments in input data are in descriptions')
+  }
+  
+  if (class(data_exps[[exp_col]]) != class(desc_exps[[exp_col]])) {
+    warning('experiments columns in input and descriptions are of different class')
+  }
+
+  return(are_exps_the_same)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+check_nb_of_options_selected <- function(A, B, C, D, E)
+{
+  options_selected <- as.logical(c(A, B, C, D, E))
+  
+  nb_T <- options_selected[options_selected == T]
+  
+  if (length(nb_T) == 1) {
+    return(T)
+  } else stop('you need to select exactly 1 PERFORM_* argument')
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+get_usable_symbols_subset_of_leftovers <- function(true_leftovers_, input_symbol_col, input_geneid_col = NA, other_input_cols = NA, output_ext_gene_name_col)
+{
+  identifiers <- as.character(c(input_symbol_col, input_geneid_col, other_input_cols))
+  
+  identifiers <- identifiers[!is.na(identifiers)]
+  
+  usable_leftovers <- list()
+  leftovers_ <- true_leftovers_
+
+  for (identifier in identifiers) {
+    usable_leftovers[[identifier]] <- subset(
+      x = leftovers_, 
+      subset = !is.na(leftovers_[[identifier]]))
+    
+    usable_leftovers[[identifier]][[output_ext_gene_name_col]] <- usable_leftovers[[identifier]][[identifier]]
+    
+    
+    if (identifier == input_geneid_col) {
+      usable_leftovers[[identifier]][[output_ext_gene_name_col]] <- stringr::str_remove(
+        string = usable_leftovers[[identifier]][[output_ext_gene_name_col]], 
+        pattern = ',.*')
+      
+      usable_leftovers[[identifier]][[output_ext_gene_name_col]] <- paste0(
+        'LOC', 
+        usable_leftovers[[identifier]][[output_ext_gene_name_col]])
+      
+      } else if (identifier != input_symbol_col) {
+        usable_leftovers[[identifier]][[output_ext_gene_name_col]] <- stringr::str_remove(
+          string = usable_leftovers[[identifier]][[output_ext_gene_name_col]], 
+          pattern = ',.*')
+      }
+    
+    if (length(usable_leftovers[[identifier]][[1]]) == 0) {
+      usable_leftovers[[identifier]] <- NULL }
+
+    leftovers_ <- subset(
+      x = leftovers_, 
+      subset = is.na(leftovers_[[identifier]]))
+  }
+
+  usable_leftovers <- rlist::list.rbind(usable_leftovers)
+
+  
+  assertthat::assert_that(
+    length(true_leftovers_[[1]]) == length(usable_leftovers[[1]]) + length(leftovers_[[1]]) )
+  
+  return(list('usable' = usable_leftovers, 'unusable' = leftovers_))
+}
+

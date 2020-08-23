@@ -3,9 +3,11 @@ source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/li
 
 
 
+
 descriptions <- list('input' = openxlsx::read.xlsx(xlsxFile = 'Antidepressants_metadata_140520.xlsx', sheet = 'pubs'))
 
 descriptions$input_qa <- verify_df(df_ = descriptions$input, sort_by_col = set_col_check()[['Exp.']])
+
 
 
 
@@ -53,12 +55,33 @@ temp_mus_weight_age_40 <- descriptions$input_qa$df$Species == 'mouse' & descript
 descriptions$input_qa$df$Age_cat[temp_mus_weight_age_40] <- 'adult'
 ### Prepare age columns ###
 
+descriptions$output <- subset(
+  x = descriptions$input_qa$df,
+  select = c('Exp.', 'Comp.', 'Pub.', 'Drug', 'Delivery', 'Dose', 'Duration_d', 'Duration_cat', 'Latency_h', 'Latency_cat', 'Tissue', 'Sub-tissue', 'Species', 'Strain', 'Sex', 'Age_d', 'Age_cat', 'Assay', 'Author', 'Year') )
 
-
-descriptions$output <- dplyr::select(descriptions$input_qa$df, 1:6, 27:28, 7, 29:30, 8:10, 31:32, 11:14, 16:23, 25)
+descriptions$output[['Assay']] <- toupper(descriptions$output[['Assay']])
 
 descriptions$output_qa <- verify_df(df_ = descriptions$output, sort_by_col = set_col_check()[['Exp.']], only_qa = T)
 
-write.table(x = descriptions$output, file = 'descriptions_for_analysis.tsv', sep = '\t', dec = ',', row.names = F)
 
-# 1 um/l in dose
+dir.create(opts$dir_descriptions)
+
+write.table(
+  x = descriptions$output, 
+  file = paste0(opts$dir_descriptions, '/descriptions_for_analysis.tsv'), 
+  sep = '\t', 
+  dec = ',', 
+  row.names = F)
+
+save(descriptions, file = paste0(opts$dir_descriptions, '/descriptions_for_analysis'))
+
+
+
+
+
+
+
+
+
+
+

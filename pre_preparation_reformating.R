@@ -422,9 +422,9 @@ write.table(
 
 
 
-############
-### TEST ###
-############
+#################################################
+### COMPARE SAMPLE ROWS FROM INPUT AND OUTPUT ###
+#################################################
 pre_prep_reform[['check_i/o']] <- purrr::map2(
   .x = pre_prep_reform, 
   .y = names(pre_prep_reform), 
@@ -438,9 +438,9 @@ pre_prep_reform[['check_i/o']] <- purrr::map2(
         drop_o_cols = c("adj,P,Val", "P,Value", "t", "B", "Description", "Protein", "Unknown"))
     }, error = function(cond) { return(NA) }
     )})
-############
-### TEST ###
-############
+#################################################
+### COMPARE SAMPLE ROWS FROM INPUT AND OUTPUT ###
+#################################################
 
 
 
@@ -449,27 +449,13 @@ pre_prep_reform[['check_i/o']] <- purrr::map2(
 #########################
 ### CONSTRUCT DATASET ###
 #########################
-pre_prep_reform$combined$data <- rlist::list.rbind(
-  .data = pre_prep_reform[names(pre_prep_reform) %in% c(opts$pre_prep_reform[['which_platform_to_get_exp_and_comp_nb_for_regex']], 'manual')])
+pre_prep_reform$combined$output_list <- purrr::map(
+  .x = pre_prep_reform[names(pre_prep_reform) %in% c(opts$pre_prep_reform[['platform_to_get_exp_and_comp_nb_for']], 'manual')], 
+  .f = function(platform){platform[['output']]})
+
+pre_prep_reform$combined$data <- rlist::list.rbind(.data = pre_prep_reform$combined$output_list)
 
 
-### !!! check can You bind data with non-compatible colnames
-test2 <- test
-colnames(test2)[[1]] <- 'ass'
-
-rlist::list.rbind(list(test, test))
-rlist::list.rbind(list(test, test2))
-### !!! check can You bind data with non-compatible colnames
-
-
-pre_prep_reform$combined$data <- verify_df(
-  df_ = pre_prep_reform$combined$data, 
-  sort_by_col = F, 
-  repeated_spaces_ = T, 
-  trailing_spaces_ = T, 
-  character_NAs_ = T, 
-  change_to_lower_ = F, 
-  to_ascii_ = F)
 
 pre_prep_reform$combined$qa <- verify_df(df_ = pre_prep_reform$combined$data, only_qa = T)
 
@@ -487,28 +473,85 @@ pre_prep_reform$combined$data[['XR_']] <- stringr::str_remove_all(string = pre_p
 
 pre_prep_reform$combined$data[['Symbol']] <- input_data_symbol_uncorruption_wrapper(manual_input_symbol = pre_prep_reform$combined$data[['Symbol']])
 
-pre_prep_reform$combined$data <- pre_prep_reform$combined$data[order(pre_prep_reform$combined$data_reformated[['Pub.']], pre_prep_reform$combined$data_[['Exp.']]),]
+pre_prep_reform$combined$data <- pre_prep_reform$combined$data[order(pre_prep_reform$combined$data[['Exp.']], pre_prep_reform$combined$data[['Comp']]),]
+
+pre_prep_reform$combined$data <- verify_df(
+  df_ = pre_prep_reform$combined$data,
+  repeated_spaces_ = T, 
+  trailing_spaces_ = T, 
+  character_NAs_ = T, 
+  empty_strings_ = T,
+  change_to_lower_ = F, 
+  to_ascii_ = F)[['df']]
+
+test_1$x <- tibble::tibble(pre_prep_reform$combined$data[['P,Value']])
+
+
+### Some final touches, dataset specific ###
+pre_prep_reform$combined$data$Symbol[pre_prep_reform$combined$data$Symbol == 'Atp1b4, ATPase, (Na+)/K+ transporting, beta 4 polypeptide, A2'] <- 'Atp1b4'
+
+pre_prep_reform$combined$data$Symbol[pre_prep_reform$combined$data$Symbol == 'B3gnt5, UDP-GlcNAc:betaGal beta-1,3-N-acetylglucosaminyltransferase 5'] <- 'B3gnt5'
+
+pre_prep_reform$combined$data[['P,Value']][is.na(pre_prep_reform$combined$data[['P,Value']])] <- 0.04999
+
+pre_prep_reform$combined$data[['Exp.']] <- as.numeric(pre_prep_reform$combined$data[['Exp.']])
+
+pre_prep_reform$combined$data[['Comp']] <- as.numeric(pre_prep_reform$combined$data[['Comp']])
+### Some final touches, dataset specific ###
 
 pre_prep_reform$combined$qa_2 <- verify_df(df_ = pre_prep_reform$combined$data, only_qa = T)
 
 write.table(
   x = pre_prep_reform$combined$data, 
-  file = 'input_data_for_analysis.tsv', 
+  file = paste0(opts$pre_prep_reform$folder, '/input_data_for_annotation.tsv'), 
   sep = '\t', 
   dec = ',', 
   row.names = F)
-
 #########################
 ### CONSTRUCT DATASET ###
 #########################
 
+
+
+
+##############################################################
+### INPUT-OUTPUT COMPARISONS LENGHTS, COMPARISONS INCLUDED ###
+##############################################################
+pre_prep_reform$combined$data_2 <- pre_prep_reform$combined$data
+
+pre_prep_reform$combined$data_2[['exp_comp']] <- paste0(pre_prep_reform$combined$data_2[['Exp.']], '_', pre_prep_reform$combined$data_2[['Comp']])
+
+pre_prep_reform$combined$comp_out_lenghts <- dplyr::group_by(.data = pre_prep_reform$combined$data_2, exp_comp) %>%
+    dplyr::summarise(n = dplyr::n())
+
+pre_prep_reform$combined$data_2 <- NULL
+##############################################################
+### INPUT-OUTPUT COMPARISONS LENGHTS, COMPARISONS INCLUDED ###
+##############################################################
+
 save(pre_prep_reform, file = paste0(opts$pre_prep_reform$folder, '/pre_prep_reform'))
-save(opts$pre_prep_reform, file = paste0(opts$pre_prep_reform$folder, '/opts_pre_prep_reform'))
+load(paste0(opts$pre_prep_reform$folder, '/pre_prep_reform'))
 
 
-########################
-### GPL6885 - 28, 68 ###
-########################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # colnames(pre_prep_reform$GPL6885$input) # - OK
 # get_all_symbols_in_chrvec(pre_prep_reform$GPL6885$input$ID) # pre_prep_reform$GPL6885$temp_output$Probe - OK
 # get_all_symbols_in_chrvec(pre_prep_reform$GPL6885$input$`Gene.symbol`) # + - OK

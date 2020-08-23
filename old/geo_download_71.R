@@ -7,8 +7,7 @@ source('https://raw.githubusercontent.com/AdrianS85/helper_R_functions/master/li
 # rm(list = ls(pattern = 'temp.*|test.*'))
 
 
-general_opts <- list('dir' = 'geo/geo_r',
-                     'Pub.' = 71,
+general_opts <- list('Pub.' = 71,
                      'col_names' = c("ID","adj.P.Val","P.Value","t","B","logFC","Gene.symbol","Gene.title","Gene.ID","UniGene.title","UniGene.symbol","UniGene.ID","Nucleotide.Title","GI","GenBank.Accession"),
                      'p_cutoff' = 0.05,
                      'series' = "GSE59895")
@@ -30,7 +29,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_2 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_2, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_2, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 2 ###
 
 
@@ -48,7 +47,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_3 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_3, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_3, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 3 ###
 
 
@@ -66,7 +65,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_4 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_4, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_4, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 4 ###
 
 
@@ -84,7 +83,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_6 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_6, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_6, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 6 ###
 
 
@@ -102,7 +101,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_7 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_7, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_7, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 7 ###
 
 
@@ -120,7 +119,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_8 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_8, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_8, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 8 ###
 
 
@@ -140,7 +139,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_14 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_14, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_14, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 14 ###
 
 
@@ -158,7 +157,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_15 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_15, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_15, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 15 ###
 
 
@@ -177,7 +176,7 @@ analysis_specific_opts$name <- paste(general_opts$Pub., analysis_specific_opts$E
 
 analysis_71_16 <- get_full_topTable(series_ = general_opts$series, platform_ = analysis_specific_opts$platform, group_names_ = analysis_specific_opts$group_design, col_names_ = general_opts$col_names, p_cutoff_ = general_opts$p_cutoff, AnnotGPL_ = T)
 
-write.table(x = analysis_71_16, file = paste0(general_opts$dir, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
+write.table(x = analysis_71_16, file = paste0(opts$dir_r_downloaded_data, '/', analysis_specific_opts$name, '.tsv'), sep = '\t', row.names = F, dec = ',')
 ### 16 ###
 
 
