@@ -49,6 +49,65 @@ get_full_topTable <- function(series_, platform_, group_names_, col_names_, p_cu
 }
 
 
+
+
+get_full_topTable2 <- function(series_, platform_, group_names_, col_names_, p_cutoff_, AnnotGPL_, name_for_exp_group = 'experimental', name_for_control_group = 'control')
+{
+  library(GEOquery)
+  library(limma)
+  library(umap)
+  
+  gset <- getGEO(series_, GSEMatrix = TRUE, AnnotGPL = AnnotGPL_)
+  if (length(gset) > 1) idx <- grep(platform_, attr(gset, "names")) else idx <- 1
+  gset <- gset[[idx]]
+  
+  # make proper column names to match toptable 
+  fvarLabels(gset) <- make.names(fvarLabels(gset))
+  
+  # group membership for all samples
+  sml <- strsplit(group_names_, split="")[[1]]
+  
+  # filter out excluded samples (marked as "X")
+  sel <- which(sml != "X")
+  sml <- sml[sel]
+  gset <- gset[ ,sel]
+  
+  # log2 transformation
+  ex <- exprs(gset)
+  qx <- as.numeric(quantile(ex, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
+  LogC <- (qx[5] > 100) ||
+    (qx[6]-qx[1] > 50 && qx[2] > 0)
+  if (LogC) { ex[which(ex <= 0)] <- NaN
+  exprs(gset) <- log2(ex) }
+  
+  # assign samples to groups and set up design matrix
+  gs <- factor(sml)
+  groups <- make.names(c(name_for_exp_group,name_for_control_group))
+  levels(gs) <- groups
+  gset$group <- gs
+  design <- model.matrix(~group + 0, gset)
+  colnames(design) <- levels(gs)
+  
+  fit <- lmFit(gset, design)  # fit linear model
+  
+  # set up contrasts of interest and recalculate model coefficients
+  cts <- paste(groups[1], groups[2], sep="-")
+  cont.matrix <- makeContrasts(contrasts=cts, levels=design)
+  fit2 <- contrasts.fit(fit, cont.matrix)
+  
+  # compute statistics and table of top significant genes
+  fit2 <- eBayes(fit2, 0.01)
+  tT <- topTable(fit2, adjust="fdr", sort.by="B", number=length(fit2$genes[[1]]))
+  
+  tT <- subset(tT, tT$P.Value < p_cutoff_, select = col_names_)
+  
+  return(tT)
+}
+
+
+
+
+
 get_control_and_drug_pairs <- function(subset_to_use_df_)
 {
   control_ <- subset(subset_to_use_df_, subset = subset_to_use_df_$`Perturbation type` == 'vehicle')
